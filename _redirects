@@ -1,0 +1,10 @@
+# Netlify redirects
+# Place this file (as _redirects, no extension) in the same directory you
+# deploy as your site root, so the nav links on the landing page
+# (/admin and /client) resolve to the two dashboards.
+#
+# If you deploy landing/, admin-dashboard/, and client-dashboard/ together
+# as one Netlify site (recommended), put this file at the root alongside them.
+
+/admin      /admin-dashboard/index.html    200
+/client     /client-dashboard/index.html   200
