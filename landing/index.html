@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YES.AI — The AI Operating System for Small Businesses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="ambient" style="position:fixed;"><div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div></div>
+
+<header id="siteHeader">
+  <nav>
+    <div class="logo">
+      <svg width="30" height="30" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="34" height="34" rx="10" fill="url(#logoGrad)"/>
+        <path d="M9 13.2c0-1.77 1.43-3.2 3.2-3.2h9.6c1.77 0 3.2 1.43 3.2 3.2v5.6c0 1.77-1.43 3.2-3.2 3.2h-6.6l-3.9 3.3v-3.3h-2.1c-1.77 0-3.2-1.43-3.2-3.2v-5.6z" fill="#04070f"/>
+        <path d="M25.5 7l0.9 1.9 1.9 0.9-1.9 0.9-0.9 1.9-0.9-1.9-1.9-0.9 1.9-0.9 0.9-1.9z" fill="#04070f"/>
+        <defs><linearGradient id="logoGrad" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse"><stop stop-color="#3d7fff"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+      </svg>
+      <span class="logo-word">YES<span>.AI</span></span>
+    </div>
+    <div class="nav-links">
+      <a href="#solution">Platform</a>
+      <a href="#demo">Demo</a>
+      <a href="#dashboards">Dashboards</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-right">
+      <a href="/client" class="nav-login">Client Login</a>
+      <a href="/admin" class="nav-login">Admin</a>
+      <a href="#demo-form" class="btn btn-primary btn-sm">Book Free Demo</a>
+    </div>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="demo">
+  <div class="ambient"><div class="grid"></div></div>
+  <div class="wrap">
+    <div class="hero-split">
+      <div class="hero-left reveal">
+        <div class="eyebrow">The AI Operating System</div>
+        <h1>The AI Operating System <span class="hl">for Small Businesses</span></h1>
+        <div class="hero-sub-list">
+          Capture every lead. Reply instantly. Book appointments.<br>
+          Notify your team. <strong>Manage your business with AI.</strong>
+        </div>
+        <div class="hero-ctas">
+          <a href="#demo-form" class="btn btn-primary">Book Free Demo</a>
+          <a href="https://wa.me/971554176748?text=Hi%20YES.AI%2C%20I%20want%20a%20free%20demo" target="_blank" rel="noopener" class="btn btn-whatsapp">▶ Watch Live Demo</a>
+        </div>
+        <div class="hero-badges">
+          <div class="hero-badge"><span class="chk">✓</span> 24/7 AI Employee</div>
+          <div class="hero-badge"><span class="chk">✓</span> English + Arabic</div>
+          <div class="hero-badge"><span class="chk">✓</span> Built for UAE Businesses</div>
+        </div>
+      </div>
+
+      <div class="phone-column reveal">
+        <div class="float-card" id="fc1" style="top:6%;left:-8%;animation-delay:0s;">🔥 Hot Lead</div>
+        <div class="float-card" id="fc2" style="top:22%;right:-12%;animation-delay:.6s;">📅 Appointment Booked</div>
+        <div class="float-card" id="fc3" style="top:44%;left:-14%;animation-delay:1.2s;">📲 Owner Notified</div>
+        <div class="float-card" id="fc4" style="bottom:32%;right:-10%;animation-delay:1.8s;">💾 Lead Saved</div>
+        <div class="float-card" id="fc5" style="bottom:14%;left:-6%;animation-delay:2.4s;">🟢 AI Online</div>
+        <div class="float-card" id="fc6" style="bottom:2%;right:6%;animation-delay:3s;">🌐 English + Arabic</div>
+
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="industry-tag" id="industryTag">🏠 Real Estate</div>
+          <div class="phone-screen">
+            <div class="wa-header">
+              <div class="wa-avatar">AI</div>
+              <div><div class="wa-header-name">YES.AI Assistant</div><div class="wa-header-status">● online</div></div>
+            </div>
+            <div class="wa-body" id="heroChatBody"></div>
+            <div class="wa-footer"><div class="wa-input">Type a message</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<section class="marquee-section">
+  <div class="wrap" style="padding:0;"><div class="marquee-label">Where YES.AI works best</div></div>
+  <div class="marquee"><div class="marquee-track" id="marqueeTrack"></div></div>
+</section>
+
+<!-- BUILT FOR -->
+<section id="solution">
+  <div class="wrap">
+    <div class="built-for-head reveal">
+      <div class="eyebrow" style="justify-content:center;display:flex;">Who this is for</div>
+      <h2>Built for businesses that <span style="background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent;">cannot afford to miss leads</span></h2>
+      <p>YES.AI is designed for high-value businesses — real estate agencies, car dealerships, clinics, salons, restaurants, gyms, and service companies — that receive WhatsApp inquiries every day, where every unanswered message is a customer walking to a competitor instead.</p>
+    </div>
+    <div class="built-grid" id="builtGrid"></div>
+  </div>
+</section>
+
+<!-- DASHBOARD PREVIEW -->
+<section id="dashboards" class="soft">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="justify-content:center;display:flex;">See it in action</div>
+      <h2>A dashboard for you. A dashboard for every client.</h2>
+      <p>One admin view across every business you manage — and a focused view for each client to run their own AI employee.</p>
+    </div>
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-tab="admin" onclick="switchDashTab('admin')">Admin Dashboard</button>
+      <button class="dash-tab" data-tab="client" onclick="switchDashTab('client')">Client Dashboard</button>
+    </div>
+    <div class="browser-frame reveal">
+      <div class="browser-bar">
+        <div class="browser-dot" style="background:#ff5f57;"></div>
+        <div class="browser-dot" style="background:#febc2e;"></div>
+        <div class="browser-dot" style="background:#28c840;"></div>
+        <div class="url" id="browserUrl">yesai.app/admin</div>
+      </div>
+
+      <div class="browser-body active" id="dashAdmin">
+        <div class="mock-grid">
+          <div class="mock-side">
+            <div class="mock-side-item active">👥 Clients</div>
+            <div class="mock-side-item">📋 Leads</div>
+            <div class="mock-side-item">📅 Appointments</div>
+            <div class="mock-side-item">🔥 Hot Leads</div>
+            <div class="mock-side-item">💳 Billing</div>
+          </div>
+          <div>
+            <div class="mock-stat-row">
+              <div class="mock-stat"><div class="n">18</div><div class="l">Total Clients</div></div>
+              <div class="mock-stat"><div class="n">11</div><div class="l">Live</div></div>
+              <div class="mock-stat"><div class="n">5</div><div class="l">On Trial</div></div>
+              <div class="mock-stat"><div class="n">2</div><div class="l">Needs Setup</div></div>
+            </div>
+            <div class="mock-table">
+              <div class="mock-row head"><div>Business</div><div>Plan</div><div>Setup Status</div><div>Bot</div></div>
+              <div class="mock-row"><div>Glow Salon</div><div>Growth</div><div><span class="mock-pill on">🟢 Live</span></div><div>On</div></div>
+              <div class="mock-row"><div>Bright Smile Clinic</div><div>Pro</div><div><span class="mock-pill trial">⚪ Trial</span></div><div>On</div></div>
+              <div class="mock-row"><div>Fast Wheels Auto</div><div>Lite</div><div><span class="mock-pill progress">🟡 In Progress</span></div><div>Off</div></div>
+              <div class="mock-row"><div>New Villa Realty</div><div>Growth</div><div><span class="mock-pill needs">🔴 Needs Setup</span></div><div>Off</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="browser-body" id="dashClient">
+        <div class="mock-grid">
+          <div class="mock-side">
+            <div class="mock-side-item active">📊 Overview</div>
+            <div class="mock-side-item">📋 Leads</div>
+            <div class="mock-side-item">📅 Appointments</div>
+            <div class="mock-side-item">🧭 Setup Wizard</div>
+            <div class="mock-side-item">⚙️ Bot Settings</div>
+            <div class="mock-side-item">💳 Billing</div>
+          </div>
+          <div>
+            <div class="mock-stat-row">
+              <div class="mock-stat"><div class="n">42</div><div class="l">Total Leads</div></div>
+              <div class="mock-stat"><div class="n">7</div><div class="l">Hot Leads</div></div>
+              <div class="mock-stat"><div class="n">16</div><div class="l">Appointments</div></div>
+              <div class="mock-stat"><div class="n">38%</div><div class="l">Conversion</div></div>
+            </div>
+            <div class="mock-table">
+              <div class="mock-row head"><div>Customer</div><div>Summary</div><div>Status</div><div>Hot</div></div>
+              <div class="mock-row"><div>Sara A.</div><div>Haircut + color, Thu 5pm</div><div><span class="mock-pill on">Booked</span></div><div>—</div></div>
+              <div class="mock-row"><div>Mona K.</div><div>Urgent, same-day, cash</div><div><span class="mock-pill trial">New</span></div><div><span class="mock-pill hot">HOT</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="justify-content:center;display:flex;">Pricing</div>
+      <h2>Simple pricing. Cancel anytime.</h2>
+      <p>Every plan includes a 14-day free trial.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="glass price-card reveal">
+        <h3>Lite</h3>
+        <div class="tag">For solo operators getting started</div>
+        <div class="price-amount">AED 99<span>/month</span></div>
+        <div class="price-setup">+ AED 299 one-time setup</div>
+        <ul><li>3-second replies</li><li>Lead qualification</li><li>Google Sheets sync</li><li>1 WhatsApp number</li></ul>
+        <a href="#demo-form" class="btn btn-ghost">Start Free Trial</a>
+      </div>
+      <div class="glass price-card popular reveal">
+        <div class="ribbon">Most Popular</div>
+        <h3>Growth</h3>
+        <div class="tag">For teams ready to scale bookings</div>
+        <div class="price-amount">AED 199<span>/month</span></div>
+        <div class="price-setup">+ AED 499 one-time setup</div>
+        <ul><li>Everything in Lite</li><li>Appointment booking</li><li>Hot lead alerts</li><li>English + Arabic</li></ul>
+        <a href="#demo-form" class="btn btn-primary">Start Free Trial</a>
+      </div>
+      <div class="glass price-card reveal">
+        <h3>Pro</h3>
+        <div class="tag">For multi-branch businesses</div>
+        <div class="price-amount">AED 399<span>/month</span></div>
+        <div class="price-setup">+ AED 999 one-time setup</div>
+        <ul><li>Everything in Growth</li><li>Multi-location support</li><li>Custom AI flows</li><li>Dedicated support</li></ul>
+        <a href="#demo-form" class="btn btn-ghost">Start Free Trial</a>
+      </div>
+    </div>
+    <div class="pricing-foot">
+      <span><span class="chk">✓</span> 14-Day Free Trial</span>
+      <span><span class="chk">✓</span> Cancel Anytime</span>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="soft">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="justify-content:center;display:flex;">Early Results</div>
+      <h2>What beta clients are saying</h2>
+    </div>
+    <div class="test-grid">
+      <div class="glass test-card reveal">
+        <div class="test-stars">★★★★★</div>
+        <p class="quote">"It doesn't feel like a chatbot — it feels like I hired someone who never sleeps."</p>
+        <div class="test-who"><div class="test-avatar">GS</div><div><div class="test-name">Salon Owner</div><div class="test-role">Glow Salon, Dubai — Beta Client</div></div></div>
+      </div>
+      <div class="glass test-card reveal">
+        <div class="test-stars">★★★★★</div>
+        <p class="quote">"Every single lead is saved automatically now. Nothing slips through the cracks anymore."</p>
+        <div class="test-who"><div class="test-avatar">BS</div><div><div class="test-name">Clinic Manager</div><div class="test-role">Bright Smile Clinic, Abu Dhabi — Beta Client</div></div></div>
+      </div>
+    </div>
+    <p class="test-note">Early beta results — real client testimonials coming soon.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="justify-content:center;display:flex;">FAQ</div>
+      <h2>Questions business owners ask us</h2>
+    </div>
+    <div class="faq-list">
+      <div class="glass faq-item">
+        <button class="faq-q">Do I need a new WhatsApp number?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><p>No. YES.AI connects to your existing WhatsApp Business number — customers keep messaging the number they already know.</p></div>
+      </div>
+      <div class="glass faq-item">
+        <button class="faq-q">How long does setup take?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><p>Most businesses are fully set up in under 5 minutes using our guided setup wizard — no technical knowledge needed.</p></div>
+      </div>
+      <div class="glass faq-item">
+        <button class="faq-q">Can it reply in Arabic?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><p>Yes — YES.AI replies in English or Arabic depending on how your customer writes to you, available on Growth and Pro plans.</p></div>
+      </div>
+      <div class="glass faq-item">
+        <button class="faq-q">What happens after the free trial?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><p>Your card is only charged after the 14-day trial ends, and only if you don't cancel. You can cancel anytime from your dashboard.</p></div>
+      </div>
+      <div class="glass faq-item">
+        <button class="faq-q">Do I need technical skills to manage it?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><p>No. The setup wizard walks you through everything — services, FAQs, and integrations — like setting up a Shopify store.</p></div>
+      </div>
+      <div class="glass faq-item">
+        <button class="faq-q">Can I upgrade or downgrade later?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><p>Yes, change plans anytime from your client dashboard — changes apply on your next billing cycle.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA + LEAD FORM -->
+<section id="demo-form">
+  <div class="wrap">
+    <div class="final-cta reveal">
+      <h2>Ready to give your business an AI employee?</h2>
+      <p>Book a free demo — see your own AI flow built live in 15 minutes.</p>
+      <div class="hero-ctas" style="margin-bottom:0;justify-content:center;">
+        <a href="#leadFormCard" class="btn btn-primary">Book Free Demo</a>
+        <a href="https://wa.me/971554176748?text=Hi%20YES.AI%2C%20I%20want%20a%20free%20demo" target="_blank" rel="noopener" class="btn btn-whatsapp">▶ Watch Live Demo</a>
+      </div>
+      <div class="final-note">14-Day Free Trial · Cancel Anytime</div>
+    </div>
+
+    <div class="glass reveal" id="leadFormCard" style="max-width:620px;margin:56px auto 0;padding:40px;">
+      <h3 style="margin-bottom:6px;">Tell us about your business</h3>
+      <p style="color:var(--ink-muted);font-size:13.5px;margin-bottom:24px;">We'll WhatsApp you within 24 hours to set up your free demo.</p>
+      <form id="leadForm">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;">Name</label><input required id="lf_name" style="width:100%;padding:12px 14px;border:1px solid var(--glass-border);border-radius:10px;background:rgba(255,255,255,0.03);color:#fff;font-size:14px;"></div>
+          <div><label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;">Business type</label>
+            <select required id="lf_business" style="width:100%;padding:12px 14px;border:1px solid var(--glass-border);border-radius:10px;background:rgba(255,255,255,0.03);color:#fff;font-size:14px;">
+              <option value="" disabled selected>Select one</option>
+              <option>Salon</option><option>Clinic</option><option>Real Estate</option><option>Car Dealer</option><option>Restaurant</option><option>Gym</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;">WhatsApp number</label><input required type="tel" id="lf_whatsapp" placeholder="+971 5X XXX XXXX" style="width:100%;padding:12px 14px;border:1px solid var(--glass-border);border-radius:10px;background:rgba(255,255,255,0.03);color:#fff;font-size:14px;"></div>
+          <div><label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;">Leads per day</label>
+            <select required id="lf_leads" style="width:100%;padding:12px 14px;border:1px solid var(--glass-border);border-radius:10px;background:rgba(255,255,255,0.03);color:#fff;font-size:14px;">
+              <option value="" disabled selected>Select one</option>
+              <option>1–5</option><option>6–15</option><option>16–30</option><option>30+</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:22px;">
+          <label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;">Need appointment booking?</label>
+          <div style="display:flex;gap:12px;" id="apptGroup">
+            <label style="flex:1;border:1px solid var(--glass-border);border-radius:10px;padding:11px;text-align:center;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink-muted);" class="radio-opt" data-val="Yes"><input type="radio" name="appt" value="Yes" style="display:none;">Yes</label>
+            <label style="flex:1;border:1px solid var(--glass-border);border-radius:10px;padding:11px;text-align:center;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink-muted);" class="radio-opt" data-val="No"><input type="radio" name="appt" value="No" style="display:none;">No</label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Book My Free Demo</button>
+      </form>
+      <div id="formSuccess" style="display:none;text-align:center;padding:20px 0;">
+        <div style="font-size:36px;margin-bottom:10px;">✅</div>
+        <h3 style="margin-bottom:6px;">You're booked!</h3>
+        <p style="color:var(--ink-muted);font-size:14px;">We'll WhatsApp you within 24 hours to set up your free demo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div>© 2026 YES.AI — The AI Operating System for Small Businesses.</div>
+    <div class="footer-links">
+      <a href="mailto:royaldo1991@gmail.com">royaldo1991@gmail.com</a>
+      <a href="https://wa.me/971554176748?text=Hi%20YES.AI%2C%20I%20want%20a%20free%20demo" target="_blank" rel="noopener">WhatsApp us</a>
+      <a href="/client">Client Login</a>
+      <a href="/admin">Admin Login</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

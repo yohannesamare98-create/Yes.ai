@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YES.AI — Client Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#f5f6fc;--card:#fff;--ink:#0f1222;--ink-muted:#5b6072;
+    --blue:#2954f5;--purple:#7c3aed;--gradient:linear-gradient(135deg,#2954f5,#7c3aed);
+    --border:#e7e9f5;--green:#16a34a;--amber:#d97706;--red:#dc2626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
+  body{background:var(--bg);color:var(--ink);}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:700;}
+  .hidden{display:none !important;}
+
+  /* LOGIN */
+  .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+  .login-card{background:#fff;border-radius:20px;padding:40px;width:380px;box-shadow:0 30px 60px -30px rgba(15,18,34,0.35);}
+  .login-brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;}
+  .login-brand span{background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .login-sub{font-size:13px;color:var(--ink-muted);margin-bottom:24px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:5px;}
+  .field input,.field textarea,.field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;}
+  .field textarea{min-height:80px;resize:vertical;}
+  .btn{border:none;padding:10px 18px;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer;}
+  .btn-primary{background:var(--gradient);color:#fff;}
+  .login-card .btn-primary{width:100%;}
+  .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--ink);}
+  .btn-danger{background:#fef2f2;color:var(--red);}
+  .login-error{background:#fef2f2;color:var(--red);font-size:12.5px;padding:10px 12px;border-radius:8px;margin-bottom:14px;}
+  .demo-note{font-size:12px;color:var(--ink-muted);margin-top:16px;text-align:center;}
+
+  header{background:#fff;border-bottom:1px solid var(--border);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;}
+  .brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;}
+  .brand span{background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .header-right{display:flex;align-items:center;gap:14px;}
+  .header-email{font-size:12.5px;color:var(--ink-muted);}
+  .tabs{display:flex;gap:6px;padding:0 32px;background:#fff;border-bottom:1px solid var(--border);}
+  .tab{padding:14px 16px;font-size:13.5px;font-weight:600;color:var(--ink-muted);cursor:pointer;border-bottom:2px solid transparent;}
+  .tab.active{color:var(--blue);border-color:var(--blue);}
+  main{padding:32px;max-width:1100px;margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .stat-card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 8px 30px -20px rgba(15,18,34,0.3);}
+  .stat-num{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;}
+  .stat-label{font-size:12.5px;color:var(--ink-muted);}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 8px 30px -20px rgba(15,18,34,0.3);}
+  th,td{text-align:left;padding:12px 16px;font-size:13.5px;border-bottom:1px solid var(--border);}
+  th{color:var(--ink-muted);font-weight:600;font-size:12px;text-transform:uppercase;background:#fafbff;}
+  tr:last-child td{border-bottom:none;}
+  .pill{padding:4px 10px;border-radius:100px;font-size:11.5px;font-weight:700;text-transform:uppercase;}
+  .pill.hot{background:#fff1f0;color:#e11d48;}
+  .pill.booked, .pill.active, .pill.paid{background:#e9f9ee;color:var(--green);}
+  .pill.new{background:#eef2ff;color:var(--blue);}
+  .pill.trialing{background:#eef2ff;color:var(--blue);}
+  .pill.past_due{background:#fff7ed;color:var(--amber);}
+  .card{background:var(--card);border-radius:16px;padding:24px;margin-bottom:20px;box-shadow:0 8px 30px -20px rgba(15,18,34,0.3);}
+  .card h3{font-size:16px;margin-bottom:16px;}
+  .plan-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);}
+  .plan-row:last-child{border-bottom:none;}
+  .bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .bar-label{width:110px;font-size:12.5px;color:var(--ink-muted);}
+  .bar-track{flex:1;height:10px;background:var(--border);border-radius:100px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--gradient);}
+  .demo-banner{background:#eef2ff;color:var(--blue);padding:10px 16px;border-radius:10px;font-size:12.5px;font-weight:600;margin-bottom:20px;}
+
+  /* SETUP WIZARD */
+  .wizard-overlay{position:fixed;inset:0;background:rgba(15,18,34,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .wizard-card{background:#fff;border-radius:20px;width:680px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,0.4);}
+  .wizard-head{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;border-bottom:1px solid var(--border);}
+  .wizard-steps{display:flex;gap:6px;padding:16px 28px 0;}
+  .wizard-steps .dot{flex:1;height:5px;border-radius:100px;background:var(--border);}
+  .wizard-steps .dot.done{background:var(--gradient);}
+  .wizard-steps .dot.current{background:linear-gradient(90deg,var(--gradient) 50%,var(--border) 50%);}
+  .wizard-body{padding:24px 28px;overflow-y:auto;flex:1;}
+  .wizard-body h3{font-size:19px;margin-bottom:4px;}
+  .wizard-sub{font-size:13px;color:var(--ink-muted);margin-bottom:22px;}
+  .w-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field.full{grid-column:1 / -1;}
+  .wizard-body .field{margin-bottom:14px;}
+  .wizard-body .field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;}
+  .wizard-body .field input,.wizard-body .field select,.wizard-body .field textarea{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:9px;font-size:13.5px;font-family:'Inter',sans-serif;}
+  .wizard-body .field textarea{min-height:70px;resize:vertical;}
+  .wizard-foot{display:flex;justify-content:space-between;padding:18px 28px;border-top:1px solid var(--border);}
+  .wizard-note{font-size:12px;color:var(--ink-muted);margin-top:6px;}
+
+  .integ-row{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .integ-info{flex:1;min-width:180px;}
+  .integ-name{font-size:14px;font-weight:700;margin-bottom:2px;}
+  .integ-desc{font-size:12px;color:var(--ink-muted);}
+  .integ-status{font-size:12.5px;font-weight:700;white-space:nowrap;}
+  .integ-actions{display:flex;gap:8px;}
+
+  .checklist{display:flex;flex-direction:column;gap:8px;}
+  .checklist .item{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#fafbff;border:1px solid var(--border);border-radius:10px;font-size:13.5px;font-weight:600;}
+  .checklist .item .status{font-size:12.5px;font-weight:700;}
+  .checklist .item .status.ok{color:var(--green);}
+  .checklist .item .status.skip{color:var(--amber);}
+
+  .reminder-banner{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:14px 18px;border-radius:12px;margin-bottom:20px;font-size:13px;}
+  .reminder-banner strong{display:block;margin-bottom:6px;font-size:13.5px;}
+  .reminder-banner a{color:#c2410c;font-weight:700;cursor:pointer;text-decoration:underline;}
+
+  @media (max-width:860px){
+    header{padding:14px 16px;flex-wrap:wrap;gap:10px;}
+    .header-email{display:none;}
+    .tabs{padding:0 12px;overflow-x:auto;white-space:nowrap;}
+    .tab{padding:12px 12px;}
+    .wizard-trigger{margin-left:0 !important;}
+    main{padding:20px 16px;}
+    .stat-grid{grid-template-columns:repeat(2,1fr);}
+    table{display:block;overflow-x:auto;white-space:nowrap;}
+    .wizard-card{width:100%;max-height:96vh;}
+    .w-grid{grid-template-columns:1fr;}
+    .integ-row{flex-direction:column;align-items:flex-start;}
+  }
+  @media (max-width:480px){
+    .stat-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">YES<span>.AI</span></div>
+    <div class="login-sub">Client Dashboard login</div>
+    <div class="login-error hidden" id="loginError"></div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@yourbusiness.ae"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
+    <button class="btn btn-primary" onclick="handleLogin()">Log In</button>
+    <div class="demo-note" id="loginModeNote"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="hidden" id="dashboardWrap">
+  <header>
+    <div class="brand">YES<span>.AI</span> — Client Dashboard</div>
+    <div class="header-right">
+      <span class="header-email" id="loggedInEmail"></span>
+      <button class="btn btn-ghost" onclick="handleLogout()">Log Out</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="leads">Leads</div>
+    <div class="tab" data-tab="appointments">Appointments</div>
+    <div class="tab" data-tab="settings">Bot Settings</div>
+    <div class="tab" data-tab="knowledge">Knowledge Base</div>
+    <div class="tab" data-tab="integrations">Integrations</div>
+    <div class="tab" data-tab="billing">Billing</div>
+    <div class="tab wizard-trigger" onclick="openWizard()" style="margin-left:auto;color:var(--blue);">🧭 Setup Wizard</div>
+  </div>
+
+  <main>
+    <div class="demo-banner" id="demoBanner"></div>
+
+    <!-- OVERVIEW -->
+    <div class="view active" id="tab-overview">
+      <div id="setupReminders"></div>
+      <div class="stat-grid" id="overviewStats"></div>
+      <div class="card">
+        <h3>Lead Funnel</h3>
+        <div id="funnelBars"></div>
+      </div>
+    </div>
+
+    <!-- LEADS -->
+    <div class="view" id="tab-leads">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2>Your Leads</h2>
+        <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Name</th><th>WhatsApp</th><th>Summary</th><th>Status</th><th>Hot?</th></tr></thead>
+        <tbody id="leadsBody"></tbody>
+      </table>
+    </div>
+
+    <!-- APPOINTMENTS -->
+    <div class="view" id="tab-appointments">
+      <h2 style="margin-bottom:16px;">Appointments</h2>
+      <table>
+        <thead><tr><th>Service</th><th>Time</th><th>Status</th></tr></thead>
+        <tbody id="apptBody"></tbody>
+      </table>
+    </div>
+
+    <!-- BOT SETTINGS -->
+    <div class="view" id="tab-settings">
+      <div class="card">
+        <h3>Services & Prices</h3>
+        <div class="field"><label>One per line: Name, Price (AED)</label><textarea id="s_services"></textarea></div>
+      </div>
+      <div class="card">
+        <h3>AI Settings</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="field"><label>Tone of Voice</label>
+            <select id="s_tone"><option>Friendly</option><option>Professional</option><option>Casual</option><option>Luxury</option></select>
+          </div>
+          <div class="field"><label>Language</label>
+            <select id="s_language"><option value="en">English</option><option value="ar">Arabic</option><option value="both">English + Arabic</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Opening Hours & Location</h3>
+        <div class="field"><label>Opening Hours</label><input id="s_hours"></div>
+        <div class="field"><label>Location</label><input id="s_location"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+    </div>
+
+    <!-- KNOWLEDGE BASE -->
+    <div class="view" id="tab-knowledge">
+      <div class="card">
+        <h3>FAQs</h3>
+        <div class="field"><label>One per line: Question ? Answer</label><textarea id="k_faqs"></textarea></div>
+      </div>
+      <div class="card">
+        <h3>Business Description</h3>
+        <div class="field"><label>A few sentences of context for your AI employee</label><textarea id="k_description"></textarea></div>
+      </div>
+      <div class="card">
+        <h3>Offers & Packages</h3>
+        <div class="field"><label>One per line: Name, Description, Price</label><textarea id="k_offers"></textarea></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveKnowledge()">Save Changes</button>
+    </div>
+
+    <!-- INTEGRATIONS -->
+    <div class="view" id="tab-integrations">
+      <div class="card">
+        <h3>Connected Services</h3>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:18px;">Anything not connected yet won't block your AI employee from working — you can connect it anytime.</p>
+        <div class="integ-row">
+          <div class="integ-info"><div class="integ-name">💬 WhatsApp Business</div><div class="integ-desc">Your AI employee replies from your real WhatsApp number.</div></div>
+          <div class="integ-status" id="dash_status_whatsapp">—</div>
+          <div class="integ-actions" id="dash_actions_whatsapp"></div>
+        </div>
+        <div class="integ-row">
+          <div class="integ-info"><div class="integ-name">📅 Google Calendar</div><div class="integ-desc">Appointments book straight into your calendar.</div></div>
+          <div class="integ-status" id="dash_status_calendar">—</div>
+          <div class="integ-actions" id="dash_actions_calendar"></div>
+        </div>
+        <div class="integ-row">
+          <div class="integ-info"><div class="integ-name">📊 Google Sheets</div><div class="integ-desc">Every lead saved automatically to your own Sheet.</div></div>
+          <div class="integ-status" id="dash_status_sheets">—</div>
+          <div class="integ-actions" id="dash_actions_sheets"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BILLING -->
+    <div class="view" id="tab-billing">
+      <div class="card">
+        <h3>Current Plan</h3>
+        <div class="plan-row"><span>Plan</span><strong id="b_plan"></strong></div>
+        <div class="plan-row"><span>Status</span><span id="b_status"></span></div>
+        <div class="plan-row"><span>Trial days remaining</span><strong id="b_trial"></strong></div>
+        <div class="plan-row"><span>Next billing date</span><strong id="b_nextbill"></strong></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btn-ghost">Update Payment Method</button>
+          <button class="btn btn-ghost">Upgrade Plan</button>
+          <button class="btn btn-ghost">Downgrade Plan</button>
+          <button class="btn btn-danger" onclick="cancelSub()">Cancel Subscription</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Invoices</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+          <tbody id="invoicesBody"><tr><td colspan="4" style="text-align:center;color:var(--ink-muted);">No invoices yet — first invoice appears after your trial ends.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- =====================================================================
+     SETUP WIZARD — 6 steps, designed so a non-technical owner can finish
+     in under 5 minutes. Saves into the same clients + bot_config rows
+     used everywhere else (DataAPI.updateClient / updateBotConfig).
+===================================================================== -->
+<div class="wizard-overlay hidden" id="wizardOverlay">
+  <div class="wizard-card">
+    <div class="wizard-head">
+      <div class="brand">YES<span>.AI</span> Setup</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeWizard()">Save & Close</button>
+    </div>
+    <div class="wizard-steps" id="wizardStepper"></div>
+
+    <div class="wizard-body" id="wizardBody">
+
+      <!-- STEP 1 — Business Information -->
+      <div class="wizard-step" data-step="1">
+        <h3>Business Information</h3>
+        <p class="wizard-sub">Tell us the basics — this is what your AI employee introduces itself as.</p>
+        <div class="w-grid">
+          <div class="field"><label>Business Name</label><input id="w_business_name"></div>
+          <div class="field"><label>Industry</label>
+            <select id="w_industry"><option>Salon</option><option>Clinic</option><option>Real Estate</option><option>Car Dealer</option><option>Restaurant</option><option>Gym</option><option>Other</option></select>
+          </div>
+          <div class="field"><label>Business Phone</label><input id="w_business_phone" placeholder="+9715XXXXXXXX"></div>
+          <div class="field"><label>Location</label><input id="w_location"></div>
+          <div class="field full"><label>Business Hours</label><input id="w_opening_hours" placeholder="Sun-Thu 9am-9pm"></div>
+          <div class="field full">
+            <label>Logo (optional)</label>
+            <input type="file" id="w_logo" accept="image/*" onchange="handleLogoUpload(event)">
+            <div id="w_logo_preview" style="margin-top:10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 — Services -->
+      <div class="wizard-step" data-step="2" style="display:none;">
+        <h3>Services & Prices</h3>
+        <p class="wizard-sub">What can customers book, and what does it cost?</p>
+        <div class="field full"><label>Services — one per line: Name, Price (AED)</label><textarea id="w_services" placeholder="Haircut, 80&#10;Color, 220"></textarea></div>
+        <div class="field full"><label>Offers / Packages — one per line: Name, Description, Price</label><textarea id="w_offers" placeholder="Cut + Color Package, Includes wash and style, 250"></textarea></div>
+      </div>
+
+      <!-- STEP 3 — AI Knowledge -->
+      <div class="wizard-step" data-step="3" style="display:none;">
+        <h3>AI Knowledge</h3>
+        <p class="wizard-sub">This is what your AI employee knows and how it sounds.</p>
+        <div class="field full"><label>FAQs — one per line: Question ? Answer</label><textarea id="w_faqs" placeholder="Do you take walk-ins? ? Yes, always welcome"></textarea></div>
+        <div class="field full"><label>Business Description</label><textarea id="w_description" placeholder="A few sentences about your business — used to give the AI context."></textarea></div>
+        <div class="w-grid">
+          <div class="field"><label>Tone of Voice</label>
+            <select id="w_tone"><option>Friendly</option><option>Professional</option><option>Casual</option><option>Luxury</option></select>
+          </div>
+          <div class="field"><label>Language</label>
+            <select id="w_language"><option value="en">English</option><option value="ar">Arabic</option><option value="both">English + Arabic</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 — Lead Qualification -->
+      <div class="wizard-step" data-step="4" style="display:none;">
+        <h3>Lead Qualification</h3>
+        <p class="wizard-sub">How your AI employee figures out what a customer wants, and who to alert.</p>
+        <div class="field full"><label>Qualification Questions (editable)</label>
+          <input id="w_q1" style="margin-bottom:8px;" value="What service do you need?">
+          <input id="w_q2" style="margin-bottom:8px;" value="What date works for you?">
+          <input id="w_q3" value="What time do you prefer?">
+        </div>
+        <div class="w-grid" style="margin-top:16px;">
+          <div class="field full"><label>Hot Lead Keywords (comma-separated)</label><input id="w_hot_keywords" placeholder="urgent, today, asap, cash"></div>
+          <div class="field"><label>Owner Notification Number</label><input id="w_notification_number" placeholder="+9715XXXXXXXX"></div>
+          <div class="field"><label>Owner Notification Email</label><input id="w_notification_email"></div>
+        </div>
+      </div>
+
+      <!-- STEP 5 — Integrations -->
+      <div class="wizard-step" data-step="5" style="display:none;">
+        <h3>Integrations</h3>
+        <p class="wizard-sub">Connect what you can now — anything skipped can be connected later from your dashboard.</p>
+
+        <div class="integ-row">
+          <div class="integ-info"><div class="integ-name">💬 WhatsApp Business</div><div class="integ-desc">Your AI employee replies from your real WhatsApp number.</div></div>
+          <div class="integ-status" id="status_whatsapp">🔴 Not Connected</div>
+          <div class="integ-actions">
+            <button class="btn btn-primary btn-sm" onclick="connectIntegration('whatsapp')">Connect WhatsApp</button>
+            <button class="btn btn-ghost btn-sm" onclick="skipIntegration('whatsapp')">Skip for Now</button>
+          </div>
+        </div>
+
+        <div class="integ-row">
+          <div class="integ-info"><div class="integ-name">📅 Google Calendar</div><div class="integ-desc">Appointments book straight into your calendar.</div></div>
+          <div class="integ-status" id="status_calendar">🔴 Not Connected</div>
+          <div class="integ-actions">
+            <button class="btn btn-primary btn-sm" onclick="connectIntegration('calendar')">Connect Google Calendar</button>
+            <button class="btn btn-ghost btn-sm" onclick="skipIntegration('calendar')">Skip for Now</button>
+          </div>
+        </div>
+
+        <div class="integ-row">
+          <div class="integ-info"><div class="integ-name">📊 Google Sheets</div><div class="integ-desc">Every lead saved automatically to your own Sheet.</div></div>
+          <div class="integ-status" id="status_sheets">🔴 Not Connected</div>
+          <div class="integ-actions">
+            <button class="btn btn-primary btn-sm" onclick="connectIntegration('sheets')">Connect Google Sheets</button>
+            <button class="btn btn-ghost btn-sm" onclick="skipIntegration('sheets')">Skip for Now</button>
+          </div>
+        </div>
+        <p class="wizard-note">You can launch YES.AI even if Calendar or Sheets aren't connected yet — we'll remind you in the dashboard.</p>
+      </div>
+
+      <!-- STEP 6 — Launch -->
+      <div class="wizard-step" data-step="6" style="display:none;">
+        <h3>Review & Launch</h3>
+        <p class="wizard-sub">Here's everything your AI employee will know on day one.</p>
+        <div class="checklist" id="launchChecklist"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:20px;font-size:16px;padding:16px;" onclick="launchYesAI()">🚀 Launch YES.AI</button>
+      </div>
+
+    </div>
+
+    <div class="wizard-foot">
+      <button class="btn btn-ghost" id="wizardBackBtn" onclick="wizardBack()">Back</button>
+      <button class="btn btn-primary" id="wizardNextBtn" onclick="wizardNext()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // =====================================================================
+  // MODE DETECTION
+  // =====================================================================
+  const cfg = window.YESAI_CONFIG || {};
+  const SUPABASE_MODE = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
+  const sb = SUPABASE_MODE ? supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
+
+  const STORAGE_KEY = 'yesai_demo_db';
+  let db;
+  let currentClientId = null; // resolved after login (real mode) or from the seeded demo data
+
+  function loadDemoDB(){
+    let d;
+    try{ d = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){ d = null; }
+    if(!d){ d = { clients:[], botConfig:{}, subscriptions:{}, leads:[], appointments:[] }; }
+    return d;
+  }
+  function saveDemoDB(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+  // =====================================================================
+  // DATA ACCESS LAYER — scoped to currentClientId in both modes.
+  // In real mode, RLS also enforces this server-side (my_client_id()),
+  // so even a tampered request can't read another client's rows.
+  // =====================================================================
+  const DataAPI = {
+    async getClient(){
+      if(!SUPABASE_MODE) return db.clients.find(c=>c.id===currentClientId) || {};
+      const { data } = await sb.from('clients').select('*').eq('id', currentClientId).single();
+      return data || {};
+    },
+    async getBotConfig(){
+      if(!SUPABASE_MODE) return db.botConfig[currentClientId] || {};
+      const { data } = await sb.from('bot_config').select('*').eq('client_id', currentClientId).single();
+      return data || {};
+    },
+    async getSubscription(){
+      if(!SUPABASE_MODE) return db.subscriptions[currentClientId] || {};
+      const { data } = await sb.from('subscriptions').select('*').eq('client_id', currentClientId).single();
+      return data || {};
+    },
+    async getLeads(){
+      if(!SUPABASE_MODE) return db.leads.filter(l=>l.client_id===currentClientId);
+      const { data, error } = await sb.from('leads').select('*').eq('client_id', currentClientId).order('created_at', { ascending:false });
+      if(error) throw error;
+      return data;
+    },
+    async getAppointments(){
+      if(!SUPABASE_MODE) return db.appointments.filter(a=>a.client_id===currentClientId);
+      const { data, error } = await sb.from('appointments').select('*').eq('client_id', currentClientId).order('appointment_time', { ascending:true });
+      if(error) throw error;
+      return data;
+    },
+    async updateBotConfig(fields){
+      if(!SUPABASE_MODE){
+        db.botConfig[currentClientId] = { ...(db.botConfig[currentClientId]||{}), ...fields };
+        saveDemoDB(db);
+        return;
+      }
+      await sb.from('bot_config').update(fields).eq('client_id', currentClientId);
+    },
+    async updateClient(fields){
+      const clean = Object.fromEntries(Object.entries(fields).filter(([,v])=> v !== undefined));
+      if(!SUPABASE_MODE){
+        const c = db.clients.find(c=>c.id===currentClientId);
+        Object.assign(c, clean);
+        saveDemoDB(db);
+        return;
+      }
+      await sb.from('clients').update(clean).eq('id', currentClientId);
+    },
+    async cancelSubscription(){
+      if(!SUPABASE_MODE){
+        db.subscriptions[currentClientId] = { ...(db.subscriptions[currentClientId]||{}), status:'cancelled' };
+        saveDemoDB(db);
+        return;
+      }
+      // In production this should call your backend (which calls Stripe's API to
+      // cancel-at-period-end), not write `subscriptions` directly from the browser —
+      // Stripe is the source of truth for billing state. This RLS policy only allows
+      // clients to SELECT their subscription row, not update it, for that reason.
+      const { data: { session } } = await sb.auth.getSession();
+      await fetch('/api/billing/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ clientId: currentClientId })
+      });
+    }
+  };
+
+  // =====================================================================
+  // AUTH
+  // =====================================================================
+  async function handleLogin(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorBox = document.getElementById('loginError');
+    errorBox.classList.add('hidden');
+
+    if(!SUPABASE_MODE){
+      showError('Supabase is not configured (config.js is empty) — reload the page to continue in demo mode.');
+      return;
+    }
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ showError(error.message); return; }
+
+    const { data: clientUserRow } = await sb.from('client_users').select('*').eq('auth_uid', data.user.id).single();
+    if(!clientUserRow){
+      showError('This account is not linked to a client. Ask YES.AI support to add you in client_users.');
+      await sb.auth.signOut();
+      return;
+    }
+
+    currentClientId = clientUserRow.client_id;
+    document.getElementById('loggedInEmail').textContent = data.user.email;
+    await enterDashboard();
+
+    function showError(msg){ errorBox.textContent = msg; errorBox.classList.remove('hidden'); }
+  }
+
+  async function handleLogout(){
+    if(SUPABASE_MODE) await sb.auth.signOut();
+    location.reload();
+  }
+
+  async function boot(){
+    document.getElementById('loginModeNote').textContent = SUPABASE_MODE
+      ? 'Log in with the account YES.AI set up for your business.'
+      : 'Supabase not configured — running in demo mode. Reload to explore without logging in (open the Admin Dashboard first to seed demo data).';
+
+    if(!SUPABASE_MODE){
+      db = loadDemoDB();
+      if(!db.clients.length){
+        alert('No demo data found yet — open the Admin Dashboard once first, then come back here.');
+        return;
+      }
+      const loginAsId = localStorage.getItem('yesai_demo_login_as');
+      localStorage.removeItem('yesai_demo_login_as');
+      currentClientId = (loginAsId && db.clients.find(c=>c.id===loginAsId)) ? loginAsId : db.clients[0].id;
+      await enterDashboard();
+      return;
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if(session){
+      const { data: clientUserRow } = await sb.from('client_users').select('*').eq('auth_uid', session.user.id).single();
+      if(clientUserRow){
+        currentClientId = clientUserRow.client_id;
+        document.getElementById('loggedInEmail').textContent = session.user.email;
+        await enterDashboard();
+      }
+    }
+  }
+
+  async function enterDashboard(){
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboardWrap').classList.remove('hidden');
+    document.getElementById('demoBanner').textContent = SUPABASE_MODE
+      ? '✅ Connected to Supabase — you only see rows belonging to your own business, enforced by Row Level Security.'
+      : '⚠️ Demo mode — reading/writing local browser data shared with the Admin Dashboard prototype.';
+    if(!SUPABASE_MODE) document.getElementById('loggedInEmail').textContent = 'demo client';
+    await renderAll();
+
+    const client = await DataAPI.getClient();
+    if(client.setup_status === 'needs_setup' || client.setup_status === 'in_progress' || !client.setup_status){
+      openWizard();
+    }
+  }
+
+  // =====================================================================
+  // TABS
+  // =====================================================================
+  document.querySelectorAll('.tab:not(.wizard-trigger)').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab:not(.wizard-trigger)').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // =====================================================================
+  // RENDERING
+  // =====================================================================
+  async function renderAll(){
+    const [leads, appts, config, client, sub] = await Promise.all([
+      DataAPI.getLeads(), DataAPI.getAppointments(), DataAPI.getBotConfig(), DataAPI.getClient(), DataAPI.getSubscription()
+    ]);
+
+    const hot = leads.filter(l=>l.is_hot_lead).length;
+    const booked = leads.filter(l=>l.status==='booked').length;
+    renderSetupReminders(client);
+
+    document.getElementById('overviewStats').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${leads.length}</div><div class="stat-label">Total Leads</div></div>
+      <div class="stat-card"><div class="stat-num">${hot}</div><div class="stat-label">Hot Leads</div></div>
+      <div class="stat-card"><div class="stat-num">${appts.length}</div><div class="stat-label">Appointments</div></div>
+      <div class="stat-card"><div class="stat-num">${leads.length ? Math.round(booked/leads.length*100) : 0}%</div><div class="stat-label">Conversion Rate</div></div>
+    `;
+
+    const statuses = ['new','contacted','booked','closed','lost'];
+    document.getElementById('funnelBars').innerHTML = statuses.map(s=>{
+      const count = leads.filter(l=>l.status===s).length;
+      const pct = leads.length ? Math.round(count/leads.length*100) : 0;
+      return `<div class="bar-row"><div class="bar-label">${s}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div><div style="width:30px;text-align:right;font-size:12.5px;">${count}</div></div>`;
+    }).join('');
+
+    document.getElementById('leadsBody').innerHTML = leads.map(l=>`
+      <tr><td>${new Date(l.created_at).toLocaleDateString()}</td><td>${l.customer_name||'-'}</td><td>${l.customer_whatsapp}</td><td>${l.message_summary}</td>
+      <td><span class="pill ${l.status}">${l.status}</span></td><td>${l.is_hot_lead?'<span class="pill hot">HOT</span>':''}</td></tr>
+    `).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--ink-muted);">No leads yet.</td></tr>`;
+
+    document.getElementById('apptBody').innerHTML = appts.map(a=>`
+      <tr><td>${a.service}</td><td>${new Date(a.appointment_time).toLocaleString()}</td><td><span class="pill active">${a.status}</span></td></tr>
+    `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--ink-muted);">No appointments yet.</td></tr>`;
+
+    document.getElementById('s_services').value = (config.services||[]).map(s=>`${s.name}, ${s.price}`).join('\n');
+    document.getElementById('s_hours').value = client.opening_hours || '';
+    document.getElementById('s_location').value = client.location || '';
+    document.getElementById('s_tone').value = config.tone_of_voice || 'Friendly';
+    document.getElementById('s_language').value = client.language || 'en';
+
+    document.getElementById('k_faqs').value = (config.faqs||[]).map(f=>`${f.question} ? ${f.answer}`).join('\n');
+    document.getElementById('k_description').value = config.business_description || '';
+    document.getElementById('k_offers').value = (config.offers||[]).map(o=>`${o.name}, ${o.description||''}, ${o.price||0}`).join('\n');
+
+    renderIntegrationsTab(client);
+
+    document.getElementById('b_plan').textContent = (sub.plan||client.plan||'-').toUpperCase();
+    document.getElementById('b_status').innerHTML = `<span class="pill ${sub.status}">${sub.status||'-'}</span>`;
+    const trialDays = sub.trial_end_date ? Math.max(0, Math.ceil((new Date(sub.trial_end_date) - new Date())/86400000)) : null;
+    document.getElementById('b_trial').textContent = trialDays !== null ? `${trialDays} days` : 'Trial ended / not applicable';
+    document.getElementById('b_nextbill').textContent = sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString() : '-';
+
+    // stash latest fetch for export/save handlers
+    window.__latestLeads = leads;
+  }
+
+  function renderIntegrationsTab(client){
+    const map = { whatsapp:'whatsapp_connected', calendar:'calendar_connected', sheets:'sheets_connected' };
+    Object.entries(map).forEach(([type, field])=>{
+      const connected = !!client[field];
+      document.getElementById(`dash_status_${type}`).innerHTML = connected
+        ? '<span style="color:var(--green);font-weight:700;">🟢 Connected</span>'
+        : '<span style="color:var(--red);font-weight:700;">🔴 Not Connected</span>';
+      document.getElementById(`dash_actions_${type}`).innerHTML = connected
+        ? `<button class="btn btn-ghost" onclick="toggleIntegration('${type}', false)">Disconnect</button>`
+        : `<button class="btn btn-primary" onclick="toggleIntegration('${type}', true)">Connect</button>`;
+    });
+  }
+
+  async function toggleIntegration(type, connect){
+    const fieldMap = { whatsapp:'whatsapp_connected', calendar:'calendar_connected', sheets:'sheets_connected' };
+    await DataAPI.updateClient({ [fieldMap[type]]: connect });
+    await renderAll();
+  }
+
+  async function saveSettings(){
+    const services = document.getElementById('s_services').value.split('\n').filter(Boolean).map(line=>{
+      const [name, price] = line.split(',').map(s=>s.trim());
+      return { name, price: Number(price)||0 };
+    });
+    await DataAPI.updateBotConfig({ services, tone_of_voice: document.getElementById('s_tone').value });
+    await DataAPI.updateClient({
+      opening_hours: document.getElementById('s_hours').value,
+      location: document.getElementById('s_location').value,
+      language: document.getElementById('s_language').value
+    });
+    alert('Saved!' + (SUPABASE_MODE ? '' : ' (demo mode — writes to local browser storage)'));
+    await renderAll();
+  }
+
+  async function saveKnowledge(){
+    const faqs = document.getElementById('k_faqs').value.split('\n').filter(Boolean).map(line=>{
+      const [question, answer] = line.split('?').map(s=>s.trim());
+      return { question: question + '?', answer };
+    });
+    const offers = document.getElementById('k_offers').value.split('\n').filter(Boolean).map(line=>{
+      const [name, description, price] = line.split(',').map(s=>s.trim());
+      return { name, description: description||'', price: Number(price)||0 };
+    });
+    await DataAPI.updateBotConfig({ faqs, offers, business_description: document.getElementById('k_description').value });
+    alert('Saved!' + (SUPABASE_MODE ? '' : ' (demo mode — writes to local browser storage)'));
+    await renderAll();
+  }
+
+  async function cancelSub(){
+    if(!confirm('Cancel your subscription? Your bot will stop at the end of the current billing period.')) return;
+    await DataAPI.cancelSubscription();
+    await renderAll();
+  }
+
+  function exportCSV(){
+    const leads = window.__latestLeads || [];
+    const rows = [['Date','Name','WhatsApp','Summary','Status','Hot']];
+    leads.forEach(l=>rows.push([new Date(l.created_at).toLocaleDateString(), l.customer_name, l.customer_whatsapp, l.message_summary, l.status, l.is_hot_lead?'Yes':'No']));
+    const csv = rows.map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'my_leads_export.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // =====================================================================
+  // SETUP WIZARD
+  // =====================================================================
+  const TOTAL_STEPS = 6;
+  let wizardStep = 1;
+  const wizardIntegrations = { whatsapp:false, calendar:false, sheets:false };
+
+  function renderStepper(){
+    document.getElementById('wizardStepper').innerHTML = Array.from({length:TOTAL_STEPS}).map((_, i)=>{
+      const n = i+1;
+      const cls = n < wizardStep ? 'done' : n === wizardStep ? 'current' : '';
+      return `<div class="dot ${cls}"></div>`;
+    }).join('');
+  }
+
+  function showWizardStep(n){
+    document.querySelectorAll('.wizard-step').forEach(s=> s.style.display = (parseInt(s.dataset.step) === n ? 'block' : 'none'));
+    document.getElementById('wizardBackBtn').style.visibility = n === 1 ? 'hidden' : 'visible';
+    document.getElementById('wizardNextBtn').style.display = n === TOTAL_STEPS ? 'none' : 'inline-flex';
+    document.getElementById('wizardNextBtn').textContent = n === 5 ? 'Continue to Review' : 'Continue';
+    renderStepper();
+    if(n === 6) renderLaunchChecklist();
+  }
+
+  function wizardNext(){
+    if(wizardStep === 1 && !document.getElementById('w_business_name').value.trim()){
+      alert('Please enter your business name to continue.'); return;
+    }
+    wizardStep = Math.min(TOTAL_STEPS, wizardStep + 1);
+    showWizardStep(wizardStep);
+    saveWizardProgress('in_progress');
+  }
+  function wizardBack(){
+    wizardStep = Math.max(1, wizardStep - 1);
+    showWizardStep(wizardStep);
+  }
+
+  async function openWizard(){
+    const client = await DataAPI.getClient();
+    const config = await DataAPI.getBotConfig();
+
+    document.getElementById('w_business_name').value = client.business_name || '';
+    document.getElementById('w_industry').value = client.industry || 'Salon';
+    document.getElementById('w_business_phone').value = client.business_phone || '';
+    document.getElementById('w_location').value = client.location || '';
+    document.getElementById('w_opening_hours').value = client.opening_hours || '';
+    if(client.logo_url) document.getElementById('w_logo_preview').innerHTML = `<img src="${client.logo_url}" style="height:44px;border-radius:8px;">`;
+
+    document.getElementById('w_services').value = (config.services||[]).map(s=>`${s.name}, ${s.price}`).join('\n');
+    document.getElementById('w_offers').value = (config.offers||[]).map(o=>`${o.name}, ${o.description||''}, ${o.price||0}`).join('\n');
+    document.getElementById('w_faqs').value = (config.faqs||[]).map(f=>`${f.question} ? ${f.answer}`).join('\n');
+    document.getElementById('w_description').value = config.business_description || '';
+    document.getElementById('w_tone').value = config.tone_of_voice || 'Friendly';
+    document.getElementById('w_language').value = client.language || 'en';
+
+    const qs = config.qualification_questions || [];
+    document.getElementById('w_q1').value = qs[0] || 'What service do you need?';
+    document.getElementById('w_q2').value = qs[1] || 'What date works for you?';
+    document.getElementById('w_q3').value = qs[2] || 'What time do you prefer?';
+    document.getElementById('w_hot_keywords').value = (config.hot_lead_rules?.keywords||[]).join(', ');
+    document.getElementById('w_notification_number').value = client.notification_number || '';
+    document.getElementById('w_notification_email').value = client.notification_email || '';
+
+    wizardIntegrations.whatsapp = !!client.whatsapp_connected;
+    wizardIntegrations.calendar = !!client.calendar_connected;
+    wizardIntegrations.sheets = !!client.sheets_connected;
+    refreshIntegrationUI();
+
+    wizardStep = 1;
+    document.getElementById('wizardOverlay').classList.remove('hidden');
+    showWizardStep(1);
+  }
+
+  function closeWizard(){
+    saveWizardProgress(); // keep whatever status they already have; just persist field edits
+    document.getElementById('wizardOverlay').classList.add('hidden');
+    renderAll();
+  }
+
+  function handleLogoUpload(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      document.getElementById('w_logo_preview').innerHTML = `<img src="${reader.result}" style="height:44px;border-radius:8px;">`;
+      document.getElementById('w_logo_preview').dataset.dataUrl = reader.result;
+    };
+    reader.readAsDataURL(file);
+    // NOTE: this stores the logo as a base64 data URL for the demo. In production,
+    // upload the file to Supabase Storage instead and save the resulting public
+    // URL to clients.logo_url — a data URL is fine for a prototype, not for scale.
+  }
+
+  function refreshIntegrationUI(){
+    const map = { whatsapp:'status_whatsapp', calendar:'status_calendar', sheets:'status_sheets' };
+    Object.entries(map).forEach(([key, id])=>{
+      document.getElementById(id).textContent = wizardIntegrations[key] ? '🟢 Connected' : '🔴 Not Connected';
+    });
+  }
+
+  function connectIntegration(type){
+    const el = document.getElementById('status_' + type);
+    el.textContent = 'Connecting…';
+    // NOTE: this is a simulated connection for the demo. In production:
+    //  - "whatsapp" opens Meta's WhatsApp Embedded Signup (Login with Meta)
+    //  - "calendar" and "sheets" open Google's OAuth consent screen
+    // and each writes real tokens/IDs back to the clients table on success.
+    setTimeout(()=>{
+      wizardIntegrations[type] = true;
+      refreshIntegrationUI();
+      if(type === 'sheets'){
+        const name = document.getElementById('w_business_name').value || 'Your Business';
+        alert(`Created Google Sheet: "YES.AI Leads - ${name}" (demo mode — simulated)`);
+      }
+    }, 900);
+  }
+  function skipIntegration(type){
+    wizardIntegrations[type] = false;
+    refreshIntegrationUI();
+  }
+
+  function renderLaunchChecklist(){
+    const items = [
+      { label:'Business Information', ok: !!document.getElementById('w_business_name').value.trim() },
+      { label:'Services', ok: !!document.getElementById('w_services').value.trim() },
+      { label:'AI Configuration', ok: !!document.getElementById('w_faqs').value.trim() || !!document.getElementById('w_description').value.trim() },
+      { label:'Lead Questions', ok: true },
+      { label:'WhatsApp', ok: wizardIntegrations.whatsapp, skip: !wizardIntegrations.whatsapp },
+      { label:'Google Calendar', ok: wizardIntegrations.calendar, skip: !wizardIntegrations.calendar },
+      { label:'Google Sheets', ok: wizardIntegrations.sheets, skip: !wizardIntegrations.sheets }
+    ];
+    document.getElementById('launchChecklist').innerHTML = items.map(i=>`
+      <div class="item"><span>${i.label}</span><span class="status ${i.ok ? 'ok' : 'skip'}">${i.ok ? '✅ Ready' : '⏭️ Skipped — can connect later'}</span></div>
+    `).join('');
+  }
+
+  function collectWizardData(){
+    const services = document.getElementById('w_services').value.split('\n').filter(Boolean).map(line=>{
+      const [name, price] = line.split(',').map(s=>s.trim());
+      return { name, price: Number(price)||0 };
+    });
+    const offers = document.getElementById('w_offers').value.split('\n').filter(Boolean).map(line=>{
+      const [name, description, price] = line.split(',').map(s=>s.trim());
+      return { name, description: description||'', price: Number(price)||0 };
+    });
+    const faqs = document.getElementById('w_faqs').value.split('\n').filter(Boolean).map(line=>{
+      const [question, answer] = line.split('?').map(s=>s.trim());
+      return { question: question + '?', answer };
+    });
+    const clientFields = {
+      business_name: document.getElementById('w_business_name').value,
+      industry: document.getElementById('w_industry').value,
+      business_phone: document.getElementById('w_business_phone').value,
+      location: document.getElementById('w_location').value,
+      opening_hours: document.getElementById('w_opening_hours').value,
+      language: document.getElementById('w_language').value,
+      notification_number: document.getElementById('w_notification_number').value,
+      notification_email: document.getElementById('w_notification_email').value,
+      logo_url: document.getElementById('w_logo_preview').dataset.dataUrl || undefined,
+      whatsapp_connected: wizardIntegrations.whatsapp,
+      calendar_connected: wizardIntegrations.calendar,
+      sheets_connected: wizardIntegrations.sheets
+    };
+    const configFields = {
+      services, offers, faqs,
+      business_description: document.getElementById('w_description').value,
+      tone_of_voice: document.getElementById('w_tone').value,
+      qualification_questions: [
+        document.getElementById('w_q1').value,
+        document.getElementById('w_q2').value,
+        document.getElementById('w_q3').value
+      ],
+      hot_lead_rules: { keywords: document.getElementById('w_hot_keywords').value.split(',').map(s=>s.trim()).filter(Boolean) }
+    };
+    return { clientFields, configFields };
+  }
+
+  async function saveWizardProgress(statusOverride){
+    const { clientFields, configFields } = collectWizardData();
+    if(statusOverride) clientFields.setup_status = statusOverride;
+    await DataAPI.updateClient(clientFields);
+    await DataAPI.updateBotConfig(configFields);
+  }
+
+  async function launchYesAI(){
+    await saveWizardProgress('trial');
+    await DataAPI.updateClient({ bot_status: 'on' });
+    document.getElementById('wizardOverlay').classList.add('hidden');
+    alert('🚀 YES.AI is live! Your AI employee is now working — trial subscription started (14 days).');
+    await renderAll();
+  }
+
+  function renderSetupReminders(client){
+    const missing = [];
+    if(!client.whatsapp_connected) missing.push({ label:'Complete WhatsApp setup', type:'whatsapp' });
+    if(!client.calendar_connected) missing.push({ label:'Connect Google Calendar', type:'calendar' });
+    if(!client.sheets_connected) missing.push({ label:'Connect Google Sheets', type:'sheets' });
+
+    const box = document.getElementById('setupReminders');
+    if(!missing.length || client.setup_status === 'needs_setup'){ box.innerHTML = ''; return; }
+    box.innerHTML = `
+      <div class="reminder-banner">
+        <strong>⚠️ A few things still need your attention</strong>
+        ${missing.map(m=>`<div>• ${m.label} — <a onclick="openWizard()">finish in Setup Wizard</a></div>`).join('')}
+      </div>`;
+  }
+
+  // =====================================================================
+
+  boot();
+</script>
+</body>
+</html>

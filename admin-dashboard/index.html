@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YES.AI — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#f5f6fc;--card:#fff;--ink:#0f1222;--ink-muted:#5b6072;
+    --blue:#2954f5;--purple:#7c3aed;--gradient:linear-gradient(135deg,#2954f5,#7c3aed);
+    --border:#e7e9f5;--green:#16a34a;--amber:#d97706;--red:#dc2626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
+  body{background:var(--bg);color:var(--ink);}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:700;}
+  .hidden{display:none !important;}
+
+  /* LOGIN */
+  .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+  .login-card{background:#fff;border-radius:20px;padding:40px;width:380px;box-shadow:0 30px 60px -30px rgba(15,18,34,0.35);}
+  .login-brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;}
+  .login-brand span{background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .login-sub{font-size:13px;color:var(--ink-muted);margin-bottom:24px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;}
+  .field textarea{min-height:60px;resize:vertical;}
+  .btn{border:none;padding:10px 18px;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer;}
+  .btn-primary{background:var(--gradient);color:#fff;width:100%;}
+  .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--ink);}
+  .btn-danger{background:#fef2f2;color:var(--red);}
+  .login-error{background:#fef2f2;color:var(--red);font-size:12.5px;padding:10px 12px;border-radius:8px;margin-bottom:14px;}
+  .demo-note{font-size:12px;color:var(--ink-muted);margin-top:16px;text-align:center;}
+
+  /* LAYOUT */
+  .layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+  aside{background:#0f1222;color:#fff;padding:24px 18px;display:flex;flex-direction:column;}
+  .brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;margin-bottom:8px;}
+  .brand span{background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .demo-tag{font-size:11px;color:#9aa0ad;margin-bottom:28px;}
+  nav a{display:block;padding:10px 12px;border-radius:8px;color:#c7c9d6;font-size:14px;font-weight:500;margin-bottom:4px;cursor:pointer;text-decoration:none;}
+  nav a.active,nav a:hover{background:rgba(255,255,255,0.08);color:#fff;}
+  .sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);}
+  .sidebar-footer .email{font-size:11.5px;color:#9aa0ad;margin-bottom:8px;word-break:break-all;}
+  .sidebar-footer button{width:100%;}
+  main{padding:32px 40px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+  .topbar h2{font-size:22px;}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 8px 30px -20px rgba(15,18,34,0.3);}
+  th,td{text-align:left;padding:12px 16px;font-size:13.5px;border-bottom:1px solid var(--border);}
+  th{color:var(--ink-muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;background:#fafbff;}
+  tr:last-child td{border-bottom:none;}
+  .pill{padding:4px 10px;border-radius:100px;font-size:11.5px;font-weight:700;text-transform:uppercase;}
+  .pill.on, .pill.active, .pill.paid{background:#e9f9ee;color:var(--green);}
+  .pill.off, .pill.cancelled{background:#f3f4f6;color:var(--ink-muted);}
+  .pill.paused, .pill.past_due{background:#fff7ed;color:var(--amber);}
+  .pill.failed{background:#fef2f2;color:var(--red);}
+  .pill.hot{background:#fff1f0;color:#e11d48;}
+  .pill.trialing{background:#eef2ff;color:var(--blue);}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .stat-card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 8px 30px -20px rgba(15,18,34,0.3);}
+  .stat-num{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;}
+  .stat-label{font-size:12.5px;color:var(--ink-muted);}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(15,18,34,0.5);display:none;align-items:center;justify-content:center;z-index:100;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:#fff;border-radius:18px;padding:28px;width:600px;max-height:85vh;overflow-y:auto;}
+  .modal h3{margin-bottom:16px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+  .form-grid.full{grid-template-columns:1fr;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .row-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .row-actions button{border:none;background:none;cursor:pointer;font-size:12.5px;color:var(--blue);font-weight:600;}
+  .empty{padding:40px;text-align:center;color:var(--ink-muted);}
+  .demo-banner{background:#eef2ff;color:var(--blue);padding:10px 16px;border-radius:10px;font-size:12.5px;font-weight:600;margin-bottom:20px;}
+
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr;}
+    aside{position:sticky;top:0;z-index:20;flex-direction:row;align-items:center;padding:14px 16px;overflow-x:auto;}
+    aside .demo-tag{display:none;}
+    nav{display:flex;gap:4px;}
+    nav a{margin-bottom:0;white-space:nowrap;}
+    .sidebar-footer{margin-top:0;margin-left:auto;padding-top:0;border-top:none;display:flex;align-items:center;gap:10px;}
+    .sidebar-footer .email{display:none;}
+    main{padding:20px 16px;}
+    .stat-grid{grid-template-columns:repeat(2,1fr);}
+    table{display:block;overflow-x:auto;white-space:nowrap;}
+    .modal{width:100%;padding:20px;}
+    .form-grid{grid-template-columns:1fr;}
+    .topbar{flex-direction:column;align-items:flex-start;gap:12px;}
+  }
+  @media (max-width:480px){
+    .stat-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">YES<span>.AI</span></div>
+    <div class="login-sub">Admin Dashboard login</div>
+    <div class="login-error hidden" id="loginError"></div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@yourcompany.com"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
+    <button class="btn btn-primary" onclick="handleLogin()">Log In</button>
+    <div class="demo-note" id="loginModeNote"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD (shown after successful login, or immediately in demo mode) -->
+<div class="layout hidden" id="dashboardLayout">
+  <aside>
+    <div class="brand">YES<span>.AI</span></div>
+    <div class="demo-tag" id="modeTag">Admin Dashboard</div>
+    <nav>
+      <a data-view="clients" class="active">👥 Clients</a>
+      <a data-view="leads">📋 Leads</a>
+      <a data-view="appointments">📅 Appointments</a>
+      <a data-view="hotleads">🔥 Hot Leads</a>
+      <a data-view="billing">💳 Billing</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="email" id="loggedInEmail"></div>
+      <button class="btn btn-ghost" onclick="handleLogout()">Log Out</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="demo-banner" id="demoBanner"></div>
+
+    <!-- CLIENTS VIEW -->
+    <div class="view active" id="view-clients">
+      <div class="topbar">
+        <h2>Clients</h2>
+        <button class="btn btn-primary" onclick="openClientModal()">+ Add New Client</button>
+      </div>
+      <div class="stat-grid" id="clientStats"></div>
+      <table>
+        <thead><tr><th>Business</th><th>Industry</th><th>WhatsApp</th><th>Plan</th><th>Setup Status</th><th>Bot Status</th><th>Payment</th><th></th></tr></thead>
+        <tbody id="clientsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- LEADS VIEW -->
+    <div class="view" id="view-leads">
+      <div class="topbar">
+        <h2>All Leads</h2>
+        <button class="btn btn-ghost" onclick="exportCSV('leads')">Export CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Client</th><th>Name</th><th>WhatsApp</th><th>Summary</th><th>Status</th><th>Hot?</th></tr></thead>
+        <tbody id="leadsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- APPOINTMENTS VIEW -->
+    <div class="view" id="view-appointments">
+      <div class="topbar"><h2>Appointments</h2></div>
+      <table>
+        <thead><tr><th>Client</th><th>Service</th><th>Time</th><th>Status</th></tr></thead>
+        <tbody id="apptTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- HOT LEADS VIEW -->
+    <div class="view" id="view-hotleads">
+      <div class="topbar"><h2>Hot Leads</h2></div>
+      <table>
+        <thead><tr><th>Date</th><th>Client</th><th>Name</th><th>WhatsApp</th><th>Summary</th></tr></thead>
+        <tbody id="hotLeadsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- BILLING VIEW -->
+    <div class="view" id="view-billing">
+      <div class="topbar">
+        <h2>Billing & Subscriptions</h2>
+        <button class="btn btn-ghost" onclick="exportCSV('billing')">Export Payment Report</button>
+      </div>
+      <table>
+        <thead><tr><th>Client</th><th>Plan</th><th>Status</th><th>Trial Ends</th><th>Next Billing</th><th>Setup Fee</th><th></th></tr></thead>
+        <tbody id="billingTableBody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- ADD/EDIT CLIENT MODAL -->
+<div class="modal-backdrop" id="clientModalBackdrop">
+  <div class="modal">
+    <h3 id="clientModalTitle">Add New Client</h3>
+    <input type="hidden" id="editClientId">
+    <div class="form-grid">
+      <div class="field"><label>Business Name</label><input id="f_business_name"></div>
+      <div class="field"><label>Industry</label>
+        <select id="f_industry"><option>Salon</option><option>Clinic</option><option>Real Estate</option><option>Car Dealer</option><option>Restaurant</option><option>Gym</option><option>Other</option></select>
+      </div>
+      <div class="field"><label>WhatsApp Number</label><input id="f_whatsapp_number" placeholder="+9715XXXXXXXX"></div>
+      <div class="field"><label>Notification Number (owner)</label><input id="f_notification_number" placeholder="+9715XXXXXXXX"></div>
+      <div class="field"><label>Notification Email</label><input id="f_notification_email"></div>
+      <div class="field"><label>Location</label><input id="f_location"></div>
+      <div class="field"><label>Opening Hours</label><input id="f_opening_hours" placeholder="Sun-Thu 9am-9pm"></div>
+      <div class="field"><label>Language</label>
+        <select id="f_language"><option value="en">English</option><option value="ar">Arabic</option><option value="both">English + Arabic</option></select>
+      </div>
+      <div class="field"><label>Plan</label>
+        <select id="f_plan"><option value="lite">Lite</option><option value="growth">Growth</option><option value="pro">Pro</option></select>
+      </div>
+      <div class="field"><label>Bot Status</label>
+        <select id="f_bot_status"><option value="off">Off</option><option value="on">On</option></select>
+      </div>
+      <div class="field"><label>Google Sheet URL</label><input id="f_google_sheet_url"></div>
+      <div class="field"><label>Google Calendar ID</label><input id="f_google_calendar_id"></div>
+    </div>
+    <div class="form-grid full">
+      <div class="field"><label>Services (one per line: Name, Price)</label><textarea id="f_services" placeholder="Haircut, 80&#10;Color, 220"></textarea></div>
+      <div class="field"><label>FAQs (one per line: Question ? Answer)</label><textarea id="f_faqs" placeholder="Do you take walk-ins? ? Yes, always welcome"></textarea></div>
+      <div class="field"><label>Qualification Questions (one per line)</label><textarea id="f_questions">What service do you need?
+What date works for you?
+What time do you prefer?</textarea></div>
+      <div class="field"><label>Hot Lead Keywords (comma-separated)</label><input id="f_hot_keywords" placeholder="urgent, today, asap, cash"></div>
+      <div class="field"><label>Additional AI Instructions</label><textarea id="f_ai_instructions" placeholder="Tone, special rules, upsells to mention..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeClientModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // =====================================================================
+  // MODE DETECTION — real Supabase Auth if config.js has real values,
+  // otherwise fall back to the local demo-data mode from the prototype.
+  // =====================================================================
+  const cfg = window.YESAI_CONFIG || {};
+  const SUPABASE_MODE = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
+  const sb = SUPABASE_MODE ? supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
+
+  const STORAGE_KEY = 'yesai_demo_db';
+  let db; // only used in demo mode
+
+  // =====================================================================
+  // DEMO MODE data (unchanged from the original prototype)
+  // =====================================================================
+  function loadDemoDB(){
+    let d;
+    try{ d = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){ d = null; }
+    if(!d){ d = seedDB(); localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+    return d;
+  }
+  function saveDemoDB(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+  function seedDB(){
+    const c1 = { id:'c1', business_name:'Glow Salon', industry:'Salon', whatsapp_number:'+971501112222', business_phone:'+971501112222', notification_number:'+971501110000', notification_email:'owner@glowsalon.ae', location:'Dubai Marina', opening_hours:'Sun-Thu 9am-9pm', language:'both', plan:'growth', bot_status:'on', google_sheet_url:'', google_calendar_id:'', whatsapp_connected:true, calendar_connected:true, sheets_connected:true, setup_status:'live', created_at:new Date().toISOString() };
+    const c2 = { id:'c2', business_name:'Bright Smile Clinic', industry:'Clinic', whatsapp_number:'+971502223333', business_phone:'+971502223333', notification_number:'+971502220000', notification_email:'owner@brightsmile.ae', location:'Abu Dhabi', opening_hours:'Sat-Thu 10am-8pm', language:'en', plan:'pro', bot_status:'on', google_sheet_url:'', google_calendar_id:'', whatsapp_connected:true, calendar_connected:false, sheets_connected:true, setup_status:'trial', created_at:new Date().toISOString() };
+    const c3 = { id:'c3', business_name:'Fast Wheels Auto', industry:'Car Dealer', whatsapp_number:'+971503334444', business_phone:'+971503334444', notification_number:'+971503330000', notification_email:'owner@fastwheels.ae', location:'Sharjah', opening_hours:'Daily 9am-9pm', language:'en', plan:'lite', bot_status:'off', google_sheet_url:'', google_calendar_id:'', whatsapp_connected:true, calendar_connected:false, sheets_connected:false, setup_status:'in_progress', created_at:new Date().toISOString() };
+    const c4 = { id:'c4', business_name:'New Villa Realty', industry:'Real Estate', whatsapp_number:'+971504445555', business_phone:'+971504445555', notification_number:'', notification_email:'', location:'', opening_hours:'', language:'en', plan:'growth', bot_status:'off', google_sheet_url:'', google_calendar_id:'', whatsapp_connected:false, calendar_connected:false, sheets_connected:false, setup_status:'needs_setup', created_at:new Date().toISOString() };
+    return {
+      clients: [c1, c2, c3, c4],
+      botConfig: {
+        c1: { services:[{name:'Haircut',price:80},{name:'Color',price:220}], offers:[], faqs:[{question:'Do you take walk-ins?',answer:'Yes, always welcome!'}], business_description:'A modern salon in Dubai Marina.', tone_of_voice:'Friendly', qualification_questions:['What service do you need?','What date works for you?','What time do you prefer?'], hot_lead_rules:{keywords:['urgent','today','asap']}, ai_instructions:'' },
+        c2: { services:[{name:'Cleaning',price:150},{name:'Whitening',price:400}], offers:[], faqs:[], business_description:'A dental clinic in Abu Dhabi.', tone_of_voice:'Professional', qualification_questions:['What service do you need?','What date works for you?','What time do you prefer?'], hot_lead_rules:{keywords:['pain','emergency']}, ai_instructions:'' },
+        c3: { services:[{name:'Test Drive',price:0}], offers:[], faqs:[], business_description:'', tone_of_voice:'Friendly', qualification_questions:['Which car are you interested in?','Budget range?','When can you visit?'], hot_lead_rules:{keywords:['cash','today']}, ai_instructions:'' },
+        c4: { services:[], offers:[], faqs:[], business_description:'', tone_of_voice:'Friendly', qualification_questions:['What service do you need?','What date works for you?','What time do you prefer?'], hot_lead_rules:{keywords:[]}, ai_instructions:'' }
+      },
+      subscriptions: {
+        c1: { plan:'growth', status:'active', trial_end_date:null, next_billing_date:new Date(Date.now()+20*86400000).toISOString(), setup_fee_paid:true },
+        c2: { plan:'pro', status:'trialing', trial_end_date:new Date(Date.now()+6*86400000).toISOString(), next_billing_date:null, setup_fee_paid:false },
+        c3: { plan:'lite', status:'past_due', trial_end_date:null, next_billing_date:new Date(Date.now()-2*86400000).toISOString(), setup_fee_paid:true },
+        c4: { plan:'growth', status:'trialing', trial_end_date:new Date(Date.now()+14*86400000).toISOString(), next_billing_date:null, setup_fee_paid:false }
+      },
+      leads: [
+        { id:'l1', client_id:'c1', customer_name:'Sara A.', customer_whatsapp:'+971509991111', message_summary:'Wants haircut + color this Thursday 5pm', status:'booked', is_hot_lead:false, created_at:new Date().toISOString() },
+        { id:'l2', client_id:'c1', customer_name:'Mona K.', customer_whatsapp:'+971509992222', message_summary:'Asking urgent same-day appointment, cash ready', status:'new', is_hot_lead:true, created_at:new Date().toISOString() },
+        { id:'l3', client_id:'c2', customer_name:'Ali R.', customer_whatsapp:'+971509993333', message_summary:'Tooth pain, wants emergency slot today', status:'contacted', is_hot_lead:true, created_at:new Date().toISOString() },
+        { id:'l4', client_id:'c3', customer_name:'Yousef T.', customer_whatsapp:'+971509994444', message_summary:'Interested in SUV, budget 80k, visiting Friday', status:'new', is_hot_lead:false, created_at:new Date().toISOString() }
+      ],
+      appointments: [
+        { id:'a1', client_id:'c1', service:'Haircut + Color', appointment_time:new Date(Date.now()+2*86400000).toISOString(), status:'confirmed' },
+        { id:'a2', client_id:'c2', service:'Emergency Cleaning', appointment_time:new Date(Date.now()+3600000).toISOString(), status:'confirmed' }
+      ]
+    };
+  }
+
+  // =====================================================================
+  // DATA ACCESS LAYER — same method names for both modes.
+  // Real mode talks to Supabase directly (RLS enforces admin-only access
+  // to every table, per database/schema.sql). Demo mode talks to localStorage.
+  // =====================================================================
+  const DataAPI = {
+    async getClients(){
+      if(!SUPABASE_MODE) return db.clients.map(c=>({...c, subscriptions:[db.subscriptions[c.id]]}));
+      const { data, error } = await sb.from('clients').select('*, subscriptions(*)').order('created_at', { ascending:false });
+      if(error) throw error;
+      return data;
+    },
+    async getBotConfig(clientId){
+      if(!SUPABASE_MODE) return db.botConfig[clientId] || {};
+      const { data } = await sb.from('bot_config').select('*').eq('client_id', clientId).single();
+      return data || {};
+    },
+    async addClient(clientFields, configFields){
+      if(!SUPABASE_MODE){
+        const id = 'c' + Date.now();
+        db.clients.push({ ...clientFields, id, created_at:new Date().toISOString() });
+        db.botConfig[id] = configFields;
+        db.subscriptions[id] = { plan: clientFields.plan, status:'trialing', trial_end_date:new Date(Date.now()+14*86400000).toISOString(), next_billing_date:null, setup_fee_paid:false };
+        saveDemoDB(db);
+        return id;
+      }
+      const { data: client, error } = await sb.from('clients').insert(clientFields).select().single();
+      if(error) throw error;
+      await sb.from('bot_config').insert({ client_id: client.id, ...configFields });
+      await sb.from('subscriptions').insert({ client_id: client.id, plan: clientFields.plan, status:'trialing', trial_end_date:new Date(Date.now()+14*86400000).toISOString() });
+      return client.id;
+    },
+    async updateClient(id, clientFields, configFields){
+      if(!SUPABASE_MODE){
+        const idx = db.clients.findIndex(c=>c.id===id);
+        db.clients[idx] = { ...db.clients[idx], ...clientFields };
+        db.botConfig[id] = configFields;
+        saveDemoDB(db);
+        return;
+      }
+      await sb.from('clients').update(clientFields).eq('id', id);
+      await sb.from('bot_config').update(configFields).eq('client_id', id);
+    },
+    async setBotStatus(id, status){
+      if(!SUPABASE_MODE){
+        db.clients.find(c=>c.id===id).bot_status = status;
+        saveDemoDB(db);
+        return;
+      }
+      await sb.from('clients').update({ bot_status: status }).eq('id', id);
+    },
+    async markSetupPaid(id){
+      if(!SUPABASE_MODE){
+        db.subscriptions[id] = db.subscriptions[id] || {};
+        db.subscriptions[id].setup_fee_paid = true;
+        saveDemoDB(db);
+        return;
+      }
+      await sb.from('subscriptions').update({ setup_fee_paid: true }).eq('client_id', id);
+    },
+    async deleteClient(id){
+      if(!SUPABASE_MODE){
+        db.clients = db.clients.filter(c=>c.id!==id);
+        delete db.botConfig[id];
+        delete db.subscriptions[id];
+        db.leads = db.leads.filter(l=>l.client_id!==id);
+        db.appointments = db.appointments.filter(a=>a.client_id!==id);
+        saveDemoDB(db);
+        return;
+      }
+      // `on delete cascade` on every related table (see database/schema.sql) means
+      // deleting the client row also removes their bot_config, leads, appointments,
+      // messages, subscriptions, and invoices automatically.
+      await sb.from('clients').delete().eq('id', id);
+    },
+    async getLeads(){
+      if(!SUPABASE_MODE) return db.leads;
+      const { data, error } = await sb.from('leads').select('*').order('created_at', { ascending:false });
+      if(error) throw error;
+      return data;
+    },
+    async getAppointments(){
+      if(!SUPABASE_MODE) return db.appointments;
+      const { data, error } = await sb.from('appointments').select('*').order('appointment_time', { ascending:true });
+      if(error) throw error;
+      return data;
+    }
+  };
+
+  // =====================================================================
+  // AUTH
+  // =====================================================================
+  async function handleLogin(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorBox = document.getElementById('loginError');
+    errorBox.classList.add('hidden');
+
+    if(!SUPABASE_MODE){
+      showError('Supabase is not configured (config.js is empty) — reload the page to continue in demo mode.');
+      return;
+    }
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ showError(error.message); return; }
+
+    const { data: adminRow } = await sb.from('admin_users').select('*').eq('auth_uid', data.user.id).single();
+    if(!adminRow){
+      showError('This account is not registered as an admin. Ask your platform owner to add you in admin_users.');
+      await sb.auth.signOut();
+      return;
+    }
+
+    document.getElementById('loggedInEmail').textContent = data.user.email;
+    enterDashboard();
+
+    function showError(msg){ errorBox.textContent = msg; errorBox.classList.remove('hidden'); }
+  }
+
+  async function handleLogout(){
+    if(SUPABASE_MODE) await sb.auth.signOut();
+    location.reload();
+  }
+
+  async function boot(){
+    document.getElementById('loginModeNote').textContent = SUPABASE_MODE
+      ? 'Log in with an account linked in the admin_users table.'
+      : 'Supabase not configured — running in demo mode. Reload to explore without logging in.';
+
+    if(!SUPABASE_MODE){
+      db = loadDemoDB();
+      enterDashboard();
+      return;
+    }
+
+    // If already logged in (existing session), skip straight to the dashboard.
+    const { data: { session } } = await sb.auth.getSession();
+    if(session){
+      const { data: adminRow } = await sb.from('admin_users').select('*').eq('auth_uid', session.user.id).single();
+      if(adminRow){
+        document.getElementById('loggedInEmail').textContent = session.user.email;
+        enterDashboard();
+      }
+    }
+  }
+
+  async function enterDashboard(){
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboardLayout').classList.remove('hidden');
+    document.getElementById('modeTag').textContent = SUPABASE_MODE ? 'Admin Dashboard · Live' : 'Admin Dashboard · Demo Mode';
+    document.getElementById('demoBanner').textContent = SUPABASE_MODE
+      ? '✅ Connected to Supabase — every row you see is scoped to your admin account via Row Level Security.'
+      : '⚠️ Demo mode — reading/writing local browser data. Add SUPABASE_URL + SUPABASE_ANON_KEY in config.js to go live.';
+    if(!SUPABASE_MODE) document.getElementById('loggedInEmail').textContent = 'demo@local';
+    await renderAll();
+  }
+
+  // =====================================================================
+  // NAVIGATION
+  // =====================================================================
+  document.querySelectorAll('nav a').forEach(link=>{
+    link.addEventListener('click', ()=>{
+      document.querySelectorAll('nav a').forEach(l=>l.classList.remove('active'));
+      link.classList.add('active');
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      document.getElementById('view-' + link.dataset.view).classList.add('active');
+      renderAll();
+    });
+  });
+
+  // =====================================================================
+  // RENDERING (same as the original prototype, now backed by DataAPI)
+  // =====================================================================
+  let cachedClients = [], cachedLeads = [], cachedAppointments = [];
+
+  function clientName(id){ return cachedClients.find(c=>c.id===id)?.business_name || id; }
+  function subFor(client){ return Array.isArray(client.subscriptions) ? client.subscriptions[0] : client.subscriptions; }
+
+  async function renderAll(){
+    cachedClients = await DataAPI.getClients();
+    cachedLeads = await DataAPI.getLeads();
+    cachedAppointments = await DataAPI.getAppointments();
+
+    renderClientStats();
+    renderClientsTable();
+    renderLeadsTable();
+    renderApptTable();
+    renderHotLeadsTable();
+    renderBillingTable();
+  }
+
+  const PLAN_PRICE_AED = { lite:99, growth:199, pro:399 };
+
+  function renderClientStats(){
+    const total = cachedClients.length;
+    const trial = cachedClients.filter(c=>subFor(c)?.status==='trialing').length;
+    const pastDue = cachedClients.filter(c=>subFor(c)?.status==='past_due').length;
+    const mrr = cachedClients
+      .filter(c=>subFor(c)?.status==='active')
+      .reduce((sum,c)=> sum + (PLAN_PRICE_AED[subFor(c)?.plan] || 0), 0);
+    document.getElementById('clientStats').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Total Clients</div></div>
+      <div class="stat-card"><div class="stat-num">AED ${mrr.toLocaleString()}</div><div class="stat-label">Monthly Revenue (MRR)</div></div>
+      <div class="stat-card"><div class="stat-num">${trial}</div><div class="stat-label">On Free Trial</div></div>
+      <div class="stat-card"><div class="stat-num">${pastDue}</div><div class="stat-label">Past Due</div></div>
+    `;
+  }
+
+  function renderClientsTable(){
+    document.getElementById('clientsTableBody').innerHTML = cachedClients.map(c=>{
+      const sub = subFor(c) || {};
+      return `<tr>
+        <td><strong>${c.business_name}</strong><br><span style="color:var(--ink-muted);font-size:12px;">${c.location||''}</span></td>
+        <td>${c.industry||'-'}</td>
+        <td>${c.whatsapp_number}</td>
+        <td>${c.plan}</td>
+        <td>${setupStatusBadge(c.setup_status)}</td>
+        <td><span class="pill ${c.bot_status}">${c.bot_status}</span></td>
+        <td><span class="pill ${sub.status}">${sub.status||'-'}</span></td>
+        <td class="row-actions">
+          <button onclick="editClient('${c.id}')">Edit</button>
+          <button onclick="toggleBot('${c.id}')">${c.bot_status==='on'?'Turn Off':'Turn On'}</button>
+          <button onclick="togglePause('${c.id}')">${c.bot_status==='paused'?'Resume':'Pause'}</button>
+          <button onclick="loginAsClient('${c.id}')">Login as Client</button>
+          <button onclick="deleteClient('${c.id}')" style="color:var(--red);">Delete</button>
+        </td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="8" class="empty">No clients yet.</td></tr>`;
+  }
+
+  function setupStatusBadge(status){
+    const map = {
+      live:        { icon:'🟢', label:'Live',         cls:'on' },
+      trial:       { icon:'⚪', label:'Trial',        cls:'trialing' },
+      in_progress: { icon:'🟡', label:'In Progress',  cls:'paused' },
+      needs_setup: { icon:'🔴', label:'Needs Setup',  cls:'failed' }
+    };
+    const s = map[status] || map.needs_setup;
+    return `<span class="pill ${s.cls}">${s.icon} ${s.label}</span>`;
+  }
+
+  function renderLeadsTable(){
+    document.getElementById('leadsTableBody').innerHTML = cachedLeads.map(l=>`
+      <tr>
+        <td>${new Date(l.created_at).toLocaleDateString()}</td>
+        <td>${clientName(l.client_id)}</td>
+        <td>${l.customer_name||'-'}</td>
+        <td>${l.customer_whatsapp}</td>
+        <td>${l.message_summary}</td>
+        <td><span class="pill ${l.status==='booked'?'active':'off'}">${l.status}</span></td>
+        <td>${l.is_hot_lead ? '<span class="pill hot">HOT</span>' : ''}</td>
+      </tr>`).join('') || `<tr><td colspan="7" class="empty">No leads yet.</td></tr>`;
+  }
+
+  function renderApptTable(){
+    document.getElementById('apptTableBody').innerHTML = cachedAppointments.map(a=>`
+      <tr>
+        <td>${clientName(a.client_id)}</td>
+        <td>${a.service}</td>
+        <td>${new Date(a.appointment_time).toLocaleString()}</td>
+        <td><span class="pill active">${a.status}</span></td>
+      </tr>`).join('') || `<tr><td colspan="4" class="empty">No appointments yet.</td></tr>`;
+  }
+
+  function renderHotLeadsTable(){
+    const hot = cachedLeads.filter(l=>l.is_hot_lead);
+    document.getElementById('hotLeadsTableBody').innerHTML = hot.map(l=>`
+      <tr>
+        <td>${new Date(l.created_at).toLocaleDateString()}</td>
+        <td>${clientName(l.client_id)}</td>
+        <td>${l.customer_name||'-'}</td>
+        <td>${l.customer_whatsapp}</td>
+        <td>${l.message_summary}</td>
+      </tr>`).join('') || `<tr><td colspan="5" class="empty">No hot leads right now.</td></tr>`;
+  }
+
+  function renderBillingTable(){
+    document.getElementById('billingTableBody').innerHTML = cachedClients.map(c=>{
+      const sub = subFor(c) || {};
+      return `<tr>
+        <td>${c.business_name}</td>
+        <td>${sub.plan||c.plan}</td>
+        <td><span class="pill ${sub.status}">${sub.status||'-'}</span></td>
+        <td>${sub.trial_end_date ? new Date(sub.trial_end_date).toLocaleDateString() : '-'}</td>
+        <td>${sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString() : '-'}</td>
+        <td>${sub.setup_fee_paid ? '✅ Paid' : '⏳ Pending'}</td>
+        <td class="row-actions">
+          <button onclick="markSetupPaid('${c.id}')">Mark Setup Paid</button>
+          <button onclick="toggleActivation('${c.id}')">${c.bot_status==='off' ? 'Activate' : 'Deactivate'}</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function toggleBot(id){
+    const c = cachedClients.find(c=>c.id===id);
+    await DataAPI.setBotStatus(id, c.bot_status==='on' ? 'off' : 'on');
+    await renderAll();
+  }
+  async function toggleActivation(id){ await toggleBot(id); }
+  async function markSetupPaid(id){
+    await DataAPI.markSetupPaid(id);
+    await renderAll();
+  }
+
+  async function togglePause(id){
+    const c = cachedClients.find(c=>c.id===id);
+    await DataAPI.setBotStatus(id, c.bot_status==='paused' ? 'on' : 'paused');
+    await renderAll();
+  }
+
+  function loginAsClient(id){
+    if(!SUPABASE_MODE){
+      // Demo mode: tell the client dashboard which client to open as, then launch it in a new tab.
+      localStorage.setItem('yesai_demo_login_as', id);
+      window.open('../client-dashboard/index.html', '_blank');
+      return;
+    }
+    // Real mode: true "login as client" requires the backend to mint a one-time
+    // Supabase session for that client's auth_uid using the service role key
+    // (never do this client-side). Wire this button to a backend endpoint like
+    // POST /api/admin/impersonate { clientId } that returns a magic link or
+    // short-lived session token, then redirect to /client with it.
+    alert('Login as Client requires a backend "impersonate" endpoint using the Supabase service role key — see docs/AUTH_SETUP.md for why this can\'t be done directly from the browser. Not yet wired up.');
+  }
+
+  async function deleteClient(id){
+    const c = cachedClients.find(c=>c.id===id);
+    if(!confirm(`Delete ${c.business_name}? This permanently removes their leads, appointments, and bot configuration. This cannot be undone.`)) return;
+    await DataAPI.deleteClient(id);
+    await renderAll();
+  }
+
+  // =====================================================================
+  // ADD/EDIT CLIENT MODAL
+  // =====================================================================
+  function openClientModal(){
+    document.getElementById('clientModalTitle').textContent = 'Add New Client';
+    document.getElementById('editClientId').value = '';
+    ['f_business_name','f_whatsapp_number','f_notification_number','f_notification_email','f_location','f_opening_hours','f_google_sheet_url','f_google_calendar_id','f_hot_keywords'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f_industry').value='Salon';
+    document.getElementById('f_language').value='en';
+    document.getElementById('f_plan').value='lite';
+    document.getElementById('f_bot_status').value='off';
+    document.getElementById('f_services').value='';
+    document.getElementById('f_faqs').value='';
+    document.getElementById('f_questions').value='What service do you need?\nWhat date works for you?\nWhat time do you prefer?';
+    document.getElementById('f_ai_instructions').value='';
+    document.getElementById('clientModalBackdrop').classList.add('open');
+  }
+  function closeClientModal(){ document.getElementById('clientModalBackdrop').classList.remove('open'); }
+
+  async function editClient(id){
+    const c = cachedClients.find(c=>c.id===id);
+    const config = await DataAPI.getBotConfig(id);
+    document.getElementById('clientModalTitle').textContent = 'Edit Client';
+    document.getElementById('editClientId').value = id;
+    document.getElementById('f_business_name').value = c.business_name;
+    document.getElementById('f_industry').value = c.industry;
+    document.getElementById('f_whatsapp_number').value = c.whatsapp_number;
+    document.getElementById('f_notification_number').value = c.notification_number||'';
+    document.getElementById('f_notification_email').value = c.notification_email||'';
+    document.getElementById('f_location').value = c.location||'';
+    document.getElementById('f_opening_hours').value = c.opening_hours||'';
+    document.getElementById('f_language').value = c.language;
+    document.getElementById('f_plan').value = c.plan;
+    document.getElementById('f_bot_status').value = c.bot_status;
+    document.getElementById('f_google_sheet_url').value = c.google_sheet_url||'';
+    document.getElementById('f_google_calendar_id').value = c.google_calendar_id||'';
+    document.getElementById('f_services').value = (config.services||[]).map(s=>`${s.name}, ${s.price}`).join('\n');
+    document.getElementById('f_faqs').value = (config.faqs||[]).map(f=>`${f.question} ? ${f.answer}`).join('\n');
+    document.getElementById('f_questions').value = (config.qualification_questions||[]).join('\n');
+    document.getElementById('f_hot_keywords').value = (config.hot_lead_rules?.keywords||[]).join(', ');
+    document.getElementById('f_ai_instructions').value = config.ai_instructions||'';
+    document.getElementById('clientModalBackdrop').classList.add('open');
+  }
+
+  async function saveClient(){
+    const editId = document.getElementById('editClientId').value;
+    const isNew = !editId;
+
+    const clientData = {
+      business_name: document.getElementById('f_business_name').value,
+      industry: document.getElementById('f_industry').value,
+      whatsapp_number: document.getElementById('f_whatsapp_number').value,
+      notification_number: document.getElementById('f_notification_number').value,
+      notification_email: document.getElementById('f_notification_email').value,
+      location: document.getElementById('f_location').value,
+      opening_hours: document.getElementById('f_opening_hours').value,
+      language: document.getElementById('f_language').value,
+      plan: document.getElementById('f_plan').value,
+      bot_status: document.getElementById('f_bot_status').value,
+      google_sheet_url: document.getElementById('f_google_sheet_url').value,
+      google_calendar_id: document.getElementById('f_google_calendar_id').value
+    };
+
+    const services = document.getElementById('f_services').value.split('\n').filter(Boolean).map(line=>{
+      const [name, price] = line.split(',').map(s=>s.trim());
+      return { name, price: Number(price)||0 };
+    });
+    const faqs = document.getElementById('f_faqs').value.split('\n').filter(Boolean).map(line=>{
+      const [question, answer] = line.split('?').map(s=>s.trim());
+      return { question: question + '?', answer };
+    });
+    const qualification_questions = document.getElementById('f_questions').value.split('\n').filter(Boolean);
+    const hot_lead_rules = { keywords: document.getElementById('f_hot_keywords').value.split(',').map(s=>s.trim()).filter(Boolean) };
+    const ai_instructions = document.getElementById('f_ai_instructions').value;
+    const configData = { services, faqs, qualification_questions, hot_lead_rules, ai_instructions };
+
+    if(isNew){
+      clientData.setup_status = 'needs_setup';
+      clientData.whatsapp_connected = false;
+      clientData.calendar_connected = false;
+      clientData.sheets_connected = false;
+      await DataAPI.addClient(clientData, configData);
+    } else {
+      await DataAPI.updateClient(editId, clientData, configData);
+    }
+
+    closeClientModal();
+    await renderAll();
+  }
+
+  function exportCSV(type){
+    let rows = [];
+    if(type==='leads'){
+      rows = [['Date','Client','Name','WhatsApp','Summary','Status','Hot']];
+      cachedLeads.forEach(l=>rows.push([new Date(l.created_at).toLocaleDateString(), clientName(l.client_id), l.customer_name, l.customer_whatsapp, l.message_summary, l.status, l.is_hot_lead?'Yes':'No']));
+    } else {
+      rows = [['Client','Plan','Status','Trial End','Next Billing','Setup Fee Paid']];
+      cachedClients.forEach(c=>{
+        const s = subFor(c)||{};
+        rows.push([c.business_name, s.plan, s.status, s.trial_end_date||'', s.next_billing_date||'', s.setup_fee_paid?'Yes':'No']);
+      });
+    }
+    const csv = rows.map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `yesai_${type}_export.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  boot();
+</script>
+</body>
+</html>
