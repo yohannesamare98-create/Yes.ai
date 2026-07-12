@@ -7,7 +7,7 @@ Leave any group blank to keep that integration in demo mode.
 |---|---|---|
 | `APP_URL` | Redirect URLs after Stripe checkout | Your deployed backend/frontend URL |
 | `PORT` | Local server port | Default `3000` is fine |
-| `WHATSAPP_TOKEN` / `WHATSAPP_ACCESS_TOKEN` | Sending WhatsApp messages | Meta Business App → WhatsApp → API Setup |
+| `WHATSAPP_TOKEN` | Sending WhatsApp messages (both customer replies and hot-lead alerts) | Meta Business App → WhatsApp → API Setup |
 | `WHATSAPP_PHONE_NUMBER_ID` | Which WhatsApp number sends replies | Meta Business App → WhatsApp → API Setup |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification handshake | You choose this value yourself, then enter the same value in Meta's webhook config |
 | `OPENAI_API_KEY` | The AI replies | https://platform.openai.com/api-keys |
