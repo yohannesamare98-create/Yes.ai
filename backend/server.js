@@ -70,3 +70,4 @@ app.get('/health', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`YES.AI backend listening on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
+});
