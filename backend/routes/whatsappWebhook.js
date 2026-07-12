@@ -49,6 +49,11 @@ router.post('/webhook', async (req, res) => {
     const history = conversationCache.get(cacheKey) || [];
     history.push({ role: 'user', content: text });
 
+    // handleIncomingMessage() has its own internal error handling for the
+    // OpenAI call and the Supabase save — it always returns a `reply`
+    // string (falling back to a safe message on failure) rather than
+    // throwing, so a single AI or DB hiccup can't silently drop this
+    // customer's message with no response at all.
     const { reply, client, lead, isHot, skipped } = await handleIncomingMessage({
       businessWhatsappNumber: businessNumber,
       customerWhatsappNumber: customerNumber,
@@ -61,32 +66,51 @@ router.post('/webhook', async (req, res) => {
     history.push({ role: 'assistant', content: reply });
     conversationCache.set(cacheKey, history);
 
-    await sendWhatsappReply(businessNumber, customerNumber, reply);
+    // Sending the reply is the most important step — do it first, and on
+    // its own try/catch, so a failure further down (Sheets, hot-lead alert)
+    // can never prevent the customer from getting an answer.
+    try {
+      await sendWhatsappReply(businessNumber, customerNumber, reply);
+    } catch (err) {
+      console.error('[whatsappWebhook] failed to send WhatsApp reply:', err.message);
+    }
 
     if (client?.google_sheet_url && lead) {
-      await appendLeadToSheet(client.google_sheet_url, lead);
+      try {
+        await appendLeadToSheet(client.google_sheet_url, lead);
+      } catch (err) {
+        console.error('[whatsappWebhook] failed to append lead to Google Sheet:', err.message);
+      }
     }
 
     if (isHot && client) {
-      await sendHotLeadAlert(client, lead);
+      try {
+        await sendHotLeadAlert(client, lead);
+      } catch (err) {
+        console.error('[whatsappWebhook] failed to send hot lead alert:', err.message);
+      }
     }
   } catch (err) {
-    console.error('[whatsappWebhook] error handling message:', err);
+    console.error('[whatsappWebhook] unexpected error handling message:', err);
   }
 });
 
 /**
  * Sends a text reply via the WhatsApp Cloud API.
- * Requires WHATSAPP_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID per client
- * (store these in the `clients` table if each client has their own
- * Meta app/number, or reuse one shared number ID if you're routing
- * through a single Meta Business number for all clients).
+ * Requires WHATSAPP_TOKEN + WHATSAPP_PHONE_NUMBER_ID (per client, if each
+ * client has their own Meta app/number, or reuse one shared number ID if
+ * you're routing through a single Meta Business number for all clients).
  */
 async function sendWhatsappReply(businessNumber, to, body) {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const accessToken = process.env.WHATSAPP_TOKEN;
 
-  await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+  if (!phoneNumberId || !accessToken) {
+    console.warn('[whatsappWebhook] WHATSAPP_TOKEN or WHATSAPP_PHONE_NUMBER_ID not set — skipping real send (demo mode).');
+    return;
+  }
+
+  const response = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -98,6 +122,11 @@ async function sendWhatsappReply(businessNumber, to, body) {
       text: { body }
     })
   });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    throw new Error(`WhatsApp API responded ${response.status}: ${errorBody}`);
+  }
 }
 
 export default router;
