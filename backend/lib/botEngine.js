@@ -105,39 +105,58 @@ export async function handleIncomingMessage({ businessWhatsappNumber, customerWh
 
   const systemPrompt = buildSystemPrompt(client, config);
 
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...conversationHistory
-    ],
-    max_tokens: 300
-  });
-
-  const reply = completion.choices[0].message.content;
+  // The OpenAI call is the one step a customer directly feels if it fails —
+  // fall back to a safe, honest message instead of throwing, so the
+  // conversation never just goes silent.
+  let reply;
+  let aiFailed = false;
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory
+      ],
+      max_tokens: 300
+    });
+    reply = completion.choices[0].message.content;
+  } catch (err) {
+    aiFailed = true;
+    console.error(`[botEngine] OpenAI request failed for client ${client.id}:`, err.message);
+    reply = "Sorry, I'm having a little trouble replying right now — someone from our team will follow up with you shortly.";
+  }
 
   const fullConversationText = conversationHistory.map(m => m.content).join(' ') + ' ' + reply;
   const isHot = checkHotLead(fullConversationText, config?.hot_lead_rules);
 
-  // Upsert the lead record
-  const { data: lead } = await supabase
-    .from('leads')
-    .upsert({
-      client_id: client.id,
-      customer_name: customerName || null,
-      customer_whatsapp: customerWhatsappNumber,
-      message_summary: fullConversationText.slice(0, 500),
-      is_hot_lead: isHot,
-      status: 'new'
-    }, { onConflict: 'customer_whatsapp,client_id' })
-    .select()
-    .single();
+  // Saving to Supabase should never be able to block the customer from
+  // getting `reply` back — a DB hiccup here is logged, not thrown, so the
+  // webhook route can still send the WhatsApp message either way.
+  let lead = null;
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .upsert({
+        client_id: client.id,
+        customer_name: customerName || null,
+        customer_whatsapp: customerWhatsappNumber,
+        message_summary: fullConversationText.slice(0, 500),
+        is_hot_lead: isHot,
+        status: 'new'
+      }, { onConflict: 'customer_whatsapp,client_id' })
+      .select()
+      .single();
+    if (error) throw error;
+    lead = data;
 
-  // Log the message
-  await supabase.from('messages').insert([
-    { client_id: client.id, lead_id: lead?.id, direction: 'inbound', body: conversationHistory.at(-1)?.content },
-    { client_id: client.id, lead_id: lead?.id, direction: 'outbound', body: reply }
-  ]);
+    const { error: messagesError } = await supabase.from('messages').insert([
+      { client_id: client.id, lead_id: lead?.id, direction: 'inbound', body: conversationHistory.at(-1)?.content },
+      { client_id: client.id, lead_id: lead?.id, direction: 'outbound', body: reply }
+    ]);
+    if (messagesError) throw messagesError;
+  } catch (err) {
+    console.error(`[botEngine] Failed to save lead/messages to Supabase for client ${client.id}:`, err.message);
+  }
 
-  return { reply, client, lead, isHot };
+  return { reply, client, lead, isHot, aiFailed };
 }
