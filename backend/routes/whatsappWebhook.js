@@ -16,16 +16,35 @@ const router = express.Router();
 // In-memory conversation cache (replace with a proper store like Redis in production —
 // this is fine for a first launch with a modest number of concurrent conversations).
 const conversationCache = new Map();
-
-// ---- Webhook verification (Meta calls this once when you set up the webhook) ----
+// ---- Webhook verification ----
 router.get('/webhook', (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
+  const mode = String(req.query['hub.mode'] || '').trim();
+  const receivedToken = String(req.query['hub.verify_token'] || '').trim();
+  const expectedToken = String(
+    process.env.WHATSAPP_VERIFY_TOKEN || ''
+  ).trim();
 
-  if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-    return res.status(200).send(challenge);
+  const challenge = String(req.query['hub.challenge'] || '');
+
+  console.log('[whatsappWebhook] verification request', {
+    mode,
+    tokenProvided: receivedToken.length > 0,
+    verifyTokenConfigured: expectedToken.length > 0,
+    receivedTokenLength: receivedToken.length,
+    expectedTokenLength: expectedToken.length,
+    tokensMatch: receivedToken === expectedToken
+  });
+
+  if (
+    mode === 'subscribe' &&
+    receivedToken === expectedToken &&
+    challenge
+  ) {
+    console.log('[whatsappWebhook] Webhook verified');
+    return res.status(200).type('text/plain').send(challenge);
   }
+
+  console.warn('[whatsappWebhook] Webhook verification failed');
   return res.sendStatus(403);
 });
 
