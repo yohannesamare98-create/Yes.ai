@@ -7,7 +7,8 @@
 // ============================================================
 
 import express from 'express';
-import { handleIncomingMessage } from '../lib/botEngine.js';
+import { getClientByWhatsappNumber, handleIncomingMessage } from '../lib/botEngine.js';
+import { supabase } from '../lib/supabaseClient.js';
 import { appendLeadToSheet } from '../lib/googleSheets.js';
 import { sendHotLeadAlert } from '../lib/notifications.js';
 
@@ -60,7 +61,29 @@ router.post('/webhook', async (req, res) => {
     if (!message) return; // status update / non-message event, ignore
 
     const businessNumber = change.metadata.display_phone_number; // the client's number
+    const externalMessageId = message.id || null;
     const customerNumber = message.from;
+
+    // Meta may retry the same webhook. Ignore it before calling OpenAI so the
+    // customer never receives a duplicate answer.
+    if (externalMessageId) {
+      const clientResult = await getClientByWhatsappNumber(businessNumber);
+      const clientId = clientResult?.client?.id;
+      if (clientId) {
+        const { data: existing, error: duplicateCheckError } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('client_id', clientId)
+          .eq('external_message_id', externalMessageId)
+          .maybeSingle();
+        if (duplicateCheckError) {
+          console.error('[whatsappWebhook] duplicate check failed:', duplicateCheckError.message);
+        } else if (existing) {
+          console.log('[whatsappWebhook] duplicate message ignored:', externalMessageId);
+          return;
+        }
+      }
+    }
     const customerName = change.contacts?.[0]?.profile?.name;
     const text = message.text?.body || '';
 
@@ -77,7 +100,8 @@ router.post('/webhook', async (req, res) => {
       businessWhatsappNumber: businessNumber,
       customerWhatsappNumber: customerNumber,
       customerName,
-      conversationHistory: history
+      conversationHistory: history,
+      externalMessageId
     });
 
     if (skipped) return; // bot turned off for this client

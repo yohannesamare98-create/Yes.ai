@@ -92,7 +92,13 @@ function checkHotLead(conversationText, hotLeadRules) {
  * Main entry point — called once per inbound WhatsApp message.
  * conversationHistory: array of { role: 'user'|'assistant', content }
  */
-export async function handleIncomingMessage({ businessWhatsappNumber, customerWhatsappNumber, customerName, conversationHistory }) {
+export async function handleIncomingMessage({
+  businessWhatsappNumber,
+  customerWhatsappNumber,
+  customerName,
+  conversationHistory,
+  externalMessageId = null
+}) {
   const result = await getClientByWhatsappNumber(businessWhatsappNumber);
   if (!result) {
     throw new Error(`No client found for WhatsApp number ${businessWhatsappNumber}`);
@@ -150,7 +156,7 @@ export async function handleIncomingMessage({ businessWhatsappNumber, customerWh
     lead = data;
 
     const { error: messagesError } = await supabase.from('messages').insert([
-      { client_id: client.id, lead_id: lead?.id, direction: 'inbound', body: conversationHistory.at(-1)?.content },
+      { client_id: client.id, lead_id: lead?.id, direction: 'inbound', body: conversationHistory.at(-1)?.content, external_message_id: externalMessageId },
       { client_id: client.id, lead_id: lead?.id, direction: 'outbound', body: reply }
     ]);
     if (messagesError) throw messagesError;
