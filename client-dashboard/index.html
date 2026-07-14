@@ -108,6 +108,26 @@
   .reminder-banner strong{display:block;margin-bottom:6px;font-size:13.5px;}
   .reminder-banner a{color:#c2410c;font-weight:700;cursor:pointer;text-decoration:underline;}
 
+
+  .wizard-meta{display:flex;align-items:center;gap:10px;color:var(--ink-muted);font-size:12px;}
+  .autosave-status{padding:5px 9px;border-radius:999px;background:#f3f4f6;color:var(--ink-muted);font-weight:600;}
+  .autosave-status.saved{background:#ecfdf3;color:var(--green);}
+  .autosave-status.saving{background:#eff6ff;color:var(--blue);}
+  .choice-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .choice-card{border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;background:#fff;}
+  .choice-card.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(41,84,245,.08);background:#f8faff;}
+  .choice-card strong{display:block;font-size:13.5px;margin-bottom:3px;}
+  .choice-card small{color:var(--ink-muted);font-size:12px;}
+  .hours-grid{display:grid;grid-template-columns:100px 1fr 1fr 80px;gap:8px;align-items:center;}
+  .hours-grid .day{font-size:12.5px;font-weight:700;}
+  .hours-grid input{padding:9px 10px!important;}
+  .inline-help{background:#f8faff;border:1px solid #dbe4ff;border-radius:12px;padding:12px 14px;font-size:12.5px;color:#35406d;margin-bottom:16px;}
+  .quick-add{display:flex;gap:8px;align-items:center;margin-top:8px;}
+  .quick-add input{flex:1;}
+  .review-box{background:#fafbff;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+  .review-box h4{font-size:13px;margin-bottom:5px;}
+  .review-box p{font-size:12.5px;color:var(--ink-muted);white-space:pre-wrap;}
+
   @media (max-width:860px){
     header{padding:14px 16px;flex-wrap:wrap;gap:10px;}
     .header-email{display:none;}
@@ -120,6 +140,9 @@
     .wizard-card{width:100%;max-height:96vh;}
     .w-grid{grid-template-columns:1fr;}
     .integ-row{flex-direction:column;align-items:flex-start;}
+    .choice-row{grid-template-columns:1fr;}
+    .hours-grid{grid-template-columns:80px 1fr 1fr;}
+    .hours-grid .closed-wrap{grid-column:2 / -1;}
   }
   @media (max-width:480px){
     .stat-grid{grid-template-columns:1fr;}
@@ -288,122 +311,103 @@
 </div>
 
 <!-- =====================================================================
-     SETUP WIZARD — 6 steps, designed so a non-technical owner can finish
-     in under 5 minutes. Saves into the same clients + bot_config rows
-     used everywhere else (DataAPI.updateClient / updateBotConfig).
+     SETUP WIZARD — fast 7-step WhatsApp-first onboarding.
+     Autosaves after every step and resumes from the saved step.
 ===================================================================== -->
 <div class="wizard-overlay hidden" id="wizardOverlay">
   <div class="wizard-card">
     <div class="wizard-head">
-      <div class="brand">YES<span>.AI</span> Setup</div>
+      <div>
+        <div class="brand">YES<span>.AI</span> Setup</div>
+        <div class="wizard-meta"><span id="wizardStepLabel">Step 1 of 7</span><span>•</span><span>About 5 minutes</span><span id="autosaveStatus" class="autosave-status">Ready</span></div>
+      </div>
       <button class="btn btn-ghost btn-sm" onclick="closeWizard()">Save & Close</button>
     </div>
     <div class="wizard-steps" id="wizardStepper"></div>
 
     <div class="wizard-body" id="wizardBody">
-
-      <!-- STEP 1 — Business Information -->
       <div class="wizard-step" data-step="1">
-        <h3>Business Information</h3>
-        <p class="wizard-sub">Tell us the basics — this is what your AI employee introduces itself as.</p>
+        <h3>Tell us about your business</h3>
+        <p class="wizard-sub">Only the essentials. YES.AI uses this to introduce your business correctly.</p>
         <div class="w-grid">
-          <div class="field"><label>Business Name</label><input id="w_business_name"></div>
-          <div class="field"><label>Industry</label>
-            <select id="w_industry"><option>Salon</option><option>Clinic</option><option>Real Estate</option><option>Car Dealer</option><option>Restaurant</option><option>Gym</option><option>Other</option></select>
+          <div class="field"><label>Business Name *</label><input id="w_business_name" autocomplete="organization"></div>
+          <div class="field"><label>Owner Name *</label><input id="w_owner_name" autocomplete="name"></div>
+          <div class="field"><label>Industry *</label>
+            <select id="w_industry"><option>Salon</option><option>Clinic</option><option>Dental Clinic</option><option>Real Estate</option><option>Car Dealer</option><option>Restaurant</option><option>Café</option><option>Gym</option><option>E-commerce</option><option>Professional Services</option><option>Other</option></select>
           </div>
-          <div class="field"><label>Business Phone</label><input id="w_business_phone" placeholder="+9715XXXXXXXX"></div>
-          <div class="field"><label>Location</label><input id="w_location"></div>
-          <div class="field full"><label>Business Hours</label><input id="w_opening_hours" placeholder="Sun-Thu 9am-9pm"></div>
-          <div class="field full">
-            <label>Logo (optional)</label>
-            <input type="file" id="w_logo" accept="image/*" onchange="handleLogoUpload(event)">
-            <div id="w_logo_preview" style="margin-top:10px;"></div>
-          </div>
+          <div class="field"><label>Country *</label><input id="w_country" value="United Arab Emirates"></div>
+          <div class="field"><label>City *</label><input id="w_city" placeholder="Abu Dhabi"></div>
+          <div class="field"><label>Business WhatsApp *</label><input id="w_business_phone" placeholder="+9715XXXXXXXX"></div>
+          <div class="field full"><label>Address / Area (optional)</label><input id="w_location" placeholder="Al Reem Island, Abu Dhabi"></div>
         </div>
       </div>
 
-      <!-- STEP 2 — Services -->
       <div class="wizard-step" data-step="2" style="display:none;">
-        <h3>Services & Prices</h3>
-        <p class="wizard-sub">What can customers book, and what does it cost?</p>
-        <div class="field full"><label>Services — one per line: Name, Price (AED)</label><textarea id="w_services" placeholder="Haircut, 80&#10;Color, 220"></textarea></div>
-        <div class="field full"><label>Offers / Packages — one per line: Name, Description, Price</label><textarea id="w_offers" placeholder="Cut + Color Package, Includes wash and style, 250"></textarea></div>
+        <h3>What do you sell?</h3>
+        <p class="wizard-sub">Add the services customers ask about most. You can add more later.</p>
+        <div class="inline-help">Use one line per service: <strong>Name, Price</strong>. Example: Dental Cleaning, 250</div>
+        <div class="field full"><label>Services & Prices *</label><textarea id="w_services" placeholder="Consultation, 150\nPremium Package, 499"></textarea></div>
+        <div class="field full"><label>Offers / Packages (optional)</label><textarea id="w_offers" placeholder="New Customer Offer, 20% off first booking, 120"></textarea></div>
+        <div class="field full"><label>Business Description *</label><textarea id="w_description" placeholder="Describe what your business does, who it helps, and what makes it special."></textarea></div>
       </div>
 
-      <!-- STEP 3 — AI Knowledge -->
       <div class="wizard-step" data-step="3" style="display:none;">
-        <h3>AI Knowledge</h3>
-        <p class="wizard-sub">This is what your AI employee knows and how it sounds.</p>
-        <div class="field full"><label>FAQs — one per line: Question ? Answer</label><textarea id="w_faqs" placeholder="Do you take walk-ins? ? Yes, always welcome"></textarea></div>
-        <div class="field full"><label>Business Description</label><textarea id="w_description" placeholder="A few sentences about your business — used to give the AI context."></textarea></div>
-        <div class="w-grid">
-          <div class="field"><label>Tone of Voice</label>
-            <select id="w_tone"><option>Friendly</option><option>Professional</option><option>Casual</option><option>Luxury</option></select>
-          </div>
-          <div class="field"><label>Language</label>
-            <select id="w_language"><option value="en">English</option><option value="ar">Arabic</option><option value="both">English + Arabic</option></select>
-          </div>
+        <h3>Website and working hours</h3>
+        <p class="wizard-sub">A website is optional. Your WhatsApp AI can launch without one.</p>
+        <div class="choice-row">
+          <div class="choice-card" id="websiteChoiceYes" onclick="setWebsiteChoice(true)"><strong>Yes, I have a website</strong><small>Save the website address for your AI knowledge.</small></div>
+          <div class="choice-card" id="websiteChoiceNo" onclick="setWebsiteChoice(false)"><strong>No website</strong><small>No problem — continue with WhatsApp only.</small></div>
         </div>
+        <div class="field full" id="websiteUrlWrap"><label>Website URL</label><input id="w_website_url" placeholder="https://yourbusiness.com"></div>
+        <div class="field full"><label>Timezone</label><select id="w_timezone"><option value="Asia/Dubai">UAE — Asia/Dubai</option><option value="Africa/Addis_Ababa">Ethiopia — Africa/Addis Ababa</option><option value="Asia/Riyadh">Saudi Arabia — Asia/Riyadh</option><option value="Asia/Qatar">Qatar — Asia/Qatar</option><option value="Asia/Muscat">Oman — Asia/Muscat</option></select></div>
+        <div class="hours-grid" id="hoursGrid"></div>
       </div>
 
-      <!-- STEP 4 — Lead Qualification -->
       <div class="wizard-step" data-step="4" style="display:none;">
-        <h3>Lead Qualification</h3>
-        <p class="wizard-sub">How your AI employee figures out what a customer wants, and who to alert.</p>
-        <div class="field full"><label>Qualification Questions (editable)</label>
-          <input id="w_q1" style="margin-bottom:8px;" value="What service do you need?">
-          <input id="w_q2" style="margin-bottom:8px;" value="What date works for you?">
-          <input id="w_q3" value="What time do you prefer?">
-        </div>
-        <div class="w-grid" style="margin-top:16px;">
-          <div class="field full"><label>Hot Lead Keywords (comma-separated)</label><input id="w_hot_keywords" placeholder="urgent, today, asap, cash"></div>
-          <div class="field"><label>Owner Notification Number</label><input id="w_notification_number" placeholder="+9715XXXXXXXX"></div>
-          <div class="field"><label>Owner Notification Email</label><input id="w_notification_email"></div>
-        </div>
+        <h3>Teach your AI the common answers</h3>
+        <p class="wizard-sub">Add the questions customers ask every day. Three good FAQs are enough to start.</p>
+        <div class="inline-help">Use one line per FAQ: <strong>Question ? Answer</strong></div>
+        <div class="field full"><label>FAQs *</label><textarea id="w_faqs" placeholder="Where are you located? ? We are in Al Reem Island, Abu Dhabi.\nDo you accept card payments? ? Yes, we accept cards and cash."></textarea></div>
+        <div class="quick-add"><button class="btn btn-ghost btn-sm" type="button" onclick="suggestFAQs()">✨ Suggest FAQs for my industry</button></div>
       </div>
 
-      <!-- STEP 5 — Integrations -->
       <div class="wizard-step" data-step="5" style="display:none;">
-        <h3>Integrations</h3>
-        <p class="wizard-sub">Connect what you can now — anything skipped can be connected later from your dashboard.</p>
-
-        <div class="integ-row">
-          <div class="integ-info"><div class="integ-name">💬 WhatsApp Business</div><div class="integ-desc">Your AI employee replies from your real WhatsApp number.</div></div>
-          <div class="integ-status" id="status_whatsapp">🔴 Not Connected</div>
-          <div class="integ-actions">
-            <button class="btn btn-primary btn-sm" onclick="connectIntegration('whatsapp')">Connect WhatsApp</button>
-            <button class="btn btn-ghost btn-sm" onclick="skipIntegration('whatsapp')">Skip for Now</button>
+        <h3>Choose how your AI talks</h3>
+        <p class="wizard-sub">YES.AI replies in the customer’s language and qualifies serious buyers.</p>
+        <div class="w-grid">
+          <div class="field"><label>Personality</label><select id="w_tone"><option>Friendly</option><option>Professional</option><option>Luxury</option><option>Formal</option></select></div>
+          <div class="field"><label>Languages</label><select id="w_language"><option value="en">English</option><option value="ar">Arabic</option><option value="both">English + Arabic</option></select></div>
+          <div class="field full"><label>Three qualification questions</label>
+            <input id="w_q1" style="margin-bottom:8px;" value="What service or product do you need?">
+            <input id="w_q2" style="margin-bottom:8px;" value="When would you like to buy or book?">
+            <input id="w_q3" value="What is your budget range?">
           </div>
+          <div class="field full"><label>Hot lead keywords</label><input id="w_hot_keywords" placeholder="urgent, today, ready to buy, book now, quotation"></div>
         </div>
-
-        <div class="integ-row">
-          <div class="integ-info"><div class="integ-name">📅 Google Calendar</div><div class="integ-desc">Appointments book straight into your calendar.</div></div>
-          <div class="integ-status" id="status_calendar">🔴 Not Connected</div>
-          <div class="integ-actions">
-            <button class="btn btn-primary btn-sm" onclick="connectIntegration('calendar')">Connect Google Calendar</button>
-            <button class="btn btn-ghost btn-sm" onclick="skipIntegration('calendar')">Skip for Now</button>
-          </div>
-        </div>
-
-        <div class="integ-row">
-          <div class="integ-info"><div class="integ-name">📊 Google Sheets</div><div class="integ-desc">Every lead saved automatically to your own Sheet.</div></div>
-          <div class="integ-status" id="status_sheets">🔴 Not Connected</div>
-          <div class="integ-actions">
-            <button class="btn btn-primary btn-sm" onclick="connectIntegration('sheets')">Connect Google Sheets</button>
-            <button class="btn btn-ghost btn-sm" onclick="skipIntegration('sheets')">Skip for Now</button>
-          </div>
-        </div>
-        <p class="wizard-note">You can launch YES.AI even if Calendar or Sheets aren't connected yet — we'll remind you in the dashboard.</p>
       </div>
 
-      <!-- STEP 6 — Launch -->
       <div class="wizard-step" data-step="6" style="display:none;">
-        <h3>Review & Launch</h3>
-        <p class="wizard-sub">Here's everything your AI employee will know on day one.</p>
+        <h3>Owner alerts and WhatsApp</h3>
+        <p class="wizard-sub">Choose where YES.AI should alert you when a serious customer appears.</p>
+        <div class="w-grid">
+          <div class="field"><label>Owner WhatsApp for alerts *</label><input id="w_notification_number" placeholder="+9715XXXXXXXX"></div>
+          <div class="field"><label>Owner Email</label><input id="w_notification_email" type="email"></div>
+        </div>
+        <div class="integ-row">
+          <div class="integ-info"><div class="integ-name">💬 WhatsApp Business</div><div class="integ-desc">The only required channel for the first YES.AI launch.</div></div>
+          <div class="integ-status" id="status_whatsapp">🔴 Not Connected</div>
+          <div class="integ-actions"><button class="btn btn-primary btn-sm" onclick="connectIntegration('whatsapp')">Mark Current WhatsApp Ready</button></div>
+        </div>
+        <p class="wizard-note">Google Calendar and Google Sheets are optional and can be connected later from Settings.</p>
+      </div>
+
+      <div class="wizard-step" data-step="7" style="display:none;">
+        <h3>Review and launch</h3>
+        <p class="wizard-sub">Check the essentials. You can edit everything later from the dashboard.</p>
+        <div id="wizardReview"></div>
         <div class="checklist" id="launchChecklist"></div>
         <button class="btn btn-primary" style="width:100%;margin-top:20px;font-size:16px;padding:16px;" onclick="launchYesAI()">🚀 Launch YES.AI</button>
       </div>
-
     </div>
 
     <div class="wizard-foot">
@@ -412,7 +416,6 @@
     </div>
   </div>
 </div>
-
 <script>
   // =====================================================================
   // MODE DETECTION
@@ -721,11 +724,58 @@
   }
 
   // =====================================================================
-  // SETUP WIZARD
+  // SETUP WIZARD — WhatsApp-first, fast, autosaving and resumable
   // =====================================================================
-  const TOTAL_STEPS = 6;
+  const TOTAL_STEPS = 7;
+  const WIZARD_DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   let wizardStep = 1;
-  const wizardIntegrations = { whatsapp:false, calendar:false, sheets:false };
+  let wizardSaveTimer = null;
+  let wizardHasWebsite = false;
+  const wizardIntegrations = { whatsapp:false };
+
+  function setAutosaveStatus(text, state=''){
+    const el = document.getElementById('autosaveStatus');
+    if(!el) return;
+    el.textContent = text;
+    el.className = 'autosave-status ' + state;
+  }
+
+  function buildHoursGrid(hoursData){
+    const defaults = hoursData || {};
+    document.getElementById('hoursGrid').innerHTML = WIZARD_DAYS.map(day=>{
+      const key = day.toLowerCase();
+      const row = defaults[key] || { open:'09:00', close:'18:00', closed:(day==='Sunday') };
+      return `<div class="day">${day}</div><input type="time" id="hours_${key}_open" value="${row.open||'09:00'}"><input type="time" id="hours_${key}_close" value="${row.close||'18:00'}"><label class="closed-wrap" style="font-size:12px;"><input type="checkbox" id="hours_${key}_closed" ${row.closed?'checked':''}> Closed</label>`;
+    }).join('');
+  }
+
+  function collectHours(){
+    const result = {};
+    WIZARD_DAYS.forEach(day=>{
+      const key = day.toLowerCase();
+      result[key] = {
+        open: document.getElementById(`hours_${key}_open`)?.value || '09:00',
+        close: document.getElementById(`hours_${key}_close`)?.value || '18:00',
+        closed: !!document.getElementById(`hours_${key}_closed`)?.checked
+      };
+    });
+    return result;
+  }
+
+  function hoursToSummary(hours){
+    return WIZARD_DAYS.map(day=>{
+      const row = hours[day.toLowerCase()];
+      return `${day.slice(0,3)} ${row?.closed ? 'Closed' : `${row?.open||'09:00'}-${row?.close||'18:00'}`}`;
+    }).join(', ');
+  }
+
+  function setWebsiteChoice(hasWebsite){
+    wizardHasWebsite = hasWebsite;
+    document.getElementById('websiteChoiceYes').classList.toggle('active', hasWebsite);
+    document.getElementById('websiteChoiceNo').classList.toggle('active', !hasWebsite);
+    document.getElementById('websiteUrlWrap').style.display = hasWebsite ? 'block' : 'none';
+    scheduleWizardSave();
+  }
 
   function renderStepper(){
     document.getElementById('wizardStepper').innerHTML = Array.from({length:TOTAL_STEPS}).map((_, i)=>{
@@ -733,28 +783,55 @@
       const cls = n < wizardStep ? 'done' : n === wizardStep ? 'current' : '';
       return `<div class="dot ${cls}"></div>`;
     }).join('');
+    document.getElementById('wizardStepLabel').textContent = `Step ${wizardStep} of ${TOTAL_STEPS}`;
   }
 
   function showWizardStep(n){
-    document.querySelectorAll('.wizard-step').forEach(s=> s.style.display = (parseInt(s.dataset.step) === n ? 'block' : 'none'));
+    document.querySelectorAll('.wizard-step').forEach(step=> step.style.display = (Number(step.dataset.step) === n ? 'block' : 'none'));
     document.getElementById('wizardBackBtn').style.visibility = n === 1 ? 'hidden' : 'visible';
     document.getElementById('wizardNextBtn').style.display = n === TOTAL_STEPS ? 'none' : 'inline-flex';
-    document.getElementById('wizardNextBtn').textContent = n === 5 ? 'Continue to Review' : 'Continue';
+    document.getElementById('wizardNextBtn').textContent = n === TOTAL_STEPS-1 ? 'Review Setup' : 'Continue';
     renderStepper();
-    if(n === 6) renderLaunchChecklist();
+    if(n === TOTAL_STEPS){ renderWizardReview(); renderLaunchChecklist(); }
   }
 
-  function wizardNext(){
-    if(wizardStep === 1 && !document.getElementById('w_business_name').value.trim()){
-      alert('Please enter your business name to continue.'); return;
+  function validateWizardStep(step){
+    const required = {
+      1: [['w_business_name','Business name'],['w_owner_name','Owner name'],['w_country','Country'],['w_city','City'],['w_business_phone','Business WhatsApp']],
+      2: [['w_services','At least one service or product'],['w_description','Business description']],
+      4: [['w_faqs','At least one FAQ']],
+      6: [['w_notification_number','Owner notification WhatsApp']]
+    };
+    for(const [id,label] of (required[step]||[])){
+      if(!document.getElementById(id)?.value.trim()){
+        alert(`Please enter: ${label}`);
+        document.getElementById(id)?.focus();
+        return false;
+      }
     }
+    if(step === 3 && wizardHasWebsite){
+      const url = document.getElementById('w_website_url').value.trim();
+      if(url && !/^https?:\/\//i.test(url)){ alert('Website URL must start with http:// or https://'); return false; }
+    }
+    return true;
+  }
+
+  async function wizardNext(){
+    if(!validateWizardStep(wizardStep)) return;
+    await saveWizardProgress('in_progress', wizardStep + 1);
     wizardStep = Math.min(TOTAL_STEPS, wizardStep + 1);
     showWizardStep(wizardStep);
-    saveWizardProgress('in_progress');
   }
+
   function wizardBack(){
     wizardStep = Math.max(1, wizardStep - 1);
     showWizardStep(wizardStep);
+  }
+
+  function scheduleWizardSave(){
+    clearTimeout(wizardSaveTimer);
+    setAutosaveStatus('Saving…','saving');
+    wizardSaveTimer = setTimeout(()=>saveWizardProgress('in_progress', wizardStep), 700);
   }
 
   async function openWizard(){
@@ -762,153 +839,169 @@
     const config = await DataAPI.getBotConfig();
 
     document.getElementById('w_business_name').value = client.business_name || '';
+    document.getElementById('w_owner_name').value = client.owner_name || '';
     document.getElementById('w_industry').value = client.industry || 'Salon';
-    document.getElementById('w_business_phone').value = client.business_phone || '';
+    document.getElementById('w_country').value = client.country || 'United Arab Emirates';
+    document.getElementById('w_city').value = client.city || '';
+    document.getElementById('w_business_phone').value = client.business_phone || client.whatsapp_number || '';
     document.getElementById('w_location').value = client.location || '';
-    document.getElementById('w_opening_hours').value = client.opening_hours || '';
-    if(client.logo_url) document.getElementById('w_logo_preview').innerHTML = `<img src="${client.logo_url}" style="height:44px;border-radius:8px;">`;
+    document.getElementById('w_timezone').value = client.timezone || 'Asia/Dubai';
+    document.getElementById('w_website_url').value = client.website_url || '';
+    setWebsiteChoice(!!client.has_website || !!client.website_url);
+    buildHoursGrid(client.business_hours_json || null);
 
-    document.getElementById('w_services').value = (config.services||[]).map(s=>`${s.name}, ${s.price}`).join('\n');
-    document.getElementById('w_offers').value = (config.offers||[]).map(o=>`${o.name}, ${o.description||''}, ${o.price||0}`).join('\n');
-    document.getElementById('w_faqs').value = (config.faqs||[]).map(f=>`${f.question} ? ${f.answer}`).join('\n');
+    document.getElementById('w_services').value = (config.services||[]).map(item=>`${item.name}, ${item.price||0}`).join('\n');
+    document.getElementById('w_offers').value = (config.offers||[]).map(item=>`${item.name}, ${item.description||''}, ${item.price||0}`).join('\n');
     document.getElementById('w_description').value = config.business_description || '';
+    document.getElementById('w_faqs').value = (config.faqs||[]).map(item=>`${item.question} ? ${item.answer}`).join('\n');
     document.getElementById('w_tone').value = config.tone_of_voice || 'Friendly';
     document.getElementById('w_language').value = client.language || 'en';
 
-    const qs = config.qualification_questions || [];
-    document.getElementById('w_q1').value = qs[0] || 'What service do you need?';
-    document.getElementById('w_q2').value = qs[1] || 'What date works for you?';
-    document.getElementById('w_q3').value = qs[2] || 'What time do you prefer?';
-    document.getElementById('w_hot_keywords').value = (config.hot_lead_rules?.keywords||[]).join(', ');
+    const questions = config.qualification_questions || [];
+    document.getElementById('w_q1').value = questions[0] || 'What service or product do you need?';
+    document.getElementById('w_q2').value = questions[1] || 'When would you like to buy or book?';
+    document.getElementById('w_q3').value = questions[2] || 'What is your budget range?';
+    document.getElementById('w_hot_keywords').value = (config.hot_lead_rules?.keywords || []).join(', ');
     document.getElementById('w_notification_number').value = client.notification_number || '';
-    document.getElementById('w_notification_email').value = client.notification_email || '';
+    document.getElementById('w_notification_email').value = client.notification_email || client.contact_email || '';
 
     wizardIntegrations.whatsapp = !!client.whatsapp_connected;
-    wizardIntegrations.calendar = !!client.calendar_connected;
-    wizardIntegrations.sheets = !!client.sheets_connected;
     refreshIntegrationUI();
-
-    wizardStep = 1;
+    wizardStep = Math.min(Math.max(Number(client.onboarding_step)||1,1),TOTAL_STEPS);
     document.getElementById('wizardOverlay').classList.remove('hidden');
-    showWizardStep(1);
+    showWizardStep(wizardStep);
+    setAutosaveStatus('All changes saved','saved');
+
+    document.querySelectorAll('#wizardOverlay input,#wizardOverlay textarea,#wizardOverlay select').forEach(el=>{
+      el.oninput = scheduleWizardSave;
+      el.onchange = scheduleWizardSave;
+    });
   }
 
-  function closeWizard(){
-    saveWizardProgress(); // keep whatever status they already have; just persist field edits
+  async function closeWizard(){
+    await saveWizardProgress(undefined, wizardStep);
     document.getElementById('wizardOverlay').classList.add('hidden');
-    renderAll();
-  }
-
-  function handleLogoUpload(e){
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      document.getElementById('w_logo_preview').innerHTML = `<img src="${reader.result}" style="height:44px;border-radius:8px;">`;
-      document.getElementById('w_logo_preview').dataset.dataUrl = reader.result;
-    };
-    reader.readAsDataURL(file);
-    // NOTE: this stores the logo as a base64 data URL for the demo. In production,
-    // upload the file to Supabase Storage instead and save the resulting public
-    // URL to clients.logo_url — a data URL is fine for a prototype, not for scale.
+    await renderAll();
   }
 
   function refreshIntegrationUI(){
-    const map = { whatsapp:'status_whatsapp', calendar:'status_calendar', sheets:'status_sheets' };
-    Object.entries(map).forEach(([key, id])=>{
-      document.getElementById(id).textContent = wizardIntegrations[key] ? '🟢 Connected' : '🔴 Not Connected';
-    });
+    document.getElementById('status_whatsapp').textContent = wizardIntegrations.whatsapp ? '🟢 Ready' : '🔴 Not Ready';
   }
 
   function connectIntegration(type){
-    const el = document.getElementById('status_' + type);
-    el.textContent = 'Connecting…';
-    // NOTE: this is a simulated connection for the demo. In production:
-    //  - "whatsapp" opens Meta's WhatsApp Embedded Signup (Login with Meta)
-    //  - "calendar" and "sheets" open Google's OAuth consent screen
-    // and each writes real tokens/IDs back to the clients table on success.
-    setTimeout(()=>{
-      wizardIntegrations[type] = true;
-      refreshIntegrationUI();
-      if(type === 'sheets'){
-        const name = document.getElementById('w_business_name').value || 'Your Business';
-        alert(`Created Google Sheet: "YES.AI Leads - ${name}" (demo mode — simulated)`);
-      }
-    }, 900);
-  }
-  function skipIntegration(type){
-    wizardIntegrations[type] = false;
+    if(type !== 'whatsapp') return;
+    wizardIntegrations.whatsapp = true;
     refreshIntegrationUI();
+    scheduleWizardSave();
   }
 
-  function renderLaunchChecklist(){
-    const items = [
-      { label:'Business Information', ok: !!document.getElementById('w_business_name').value.trim() },
-      { label:'Services', ok: !!document.getElementById('w_services').value.trim() },
-      { label:'AI Configuration', ok: !!document.getElementById('w_faqs').value.trim() || !!document.getElementById('w_description').value.trim() },
-      { label:'Lead Questions', ok: true },
-      { label:'WhatsApp', ok: wizardIntegrations.whatsapp, skip: !wizardIntegrations.whatsapp },
-      { label:'Google Calendar', ok: wizardIntegrations.calendar, skip: !wizardIntegrations.calendar },
-      { label:'Google Sheets', ok: wizardIntegrations.sheets, skip: !wizardIntegrations.sheets }
-    ];
-    document.getElementById('launchChecklist').innerHTML = items.map(i=>`
-      <div class="item"><span>${i.label}</span><span class="status ${i.ok ? 'ok' : 'skip'}">${i.ok ? '✅ Ready' : '⏭️ Skipped — can connect later'}</span></div>
-    `).join('');
+  function suggestFAQs(){
+    const industry = document.getElementById('w_industry').value;
+    const suggestions = {
+      'Salon':['Do you accept walk-ins? ? Yes, subject to availability.','How can I book? ? Send your preferred service, date, and time.','What payment methods do you accept? ? We accept cash and card.'],
+      'Clinic':['Do I need an appointment? ? Appointments are recommended.','What should I bring? ? Please bring your ID and any relevant medical documents.','Where are you located? ? Please share your location and our team will guide you.'],
+      'Real Estate':['Can I schedule a viewing? ? Yes, share the property and preferred date.','Do you have financing options? ? Our agent can explain available options.','Which areas do you cover? ? Tell us your preferred area and budget.'],
+      'Restaurant':['Do you accept reservations? ? Yes, share the date, time, and number of guests.','Do you offer delivery? ? Please share your location to confirm.','Do you have vegetarian options? ? Yes, ask us for today’s options.']
+    };
+    const lines = suggestions[industry] || ['What are your prices? ? Prices depend on the selected service or product.','Where are you located? ? Please contact us and we will share the exact location.','What are your working hours? ? Our hours are listed in this chat and may vary on holidays.'];
+    const box = document.getElementById('w_faqs');
+    if(!box.value.trim()) box.value = lines.join('\n');
+    else box.value += '\n' + lines.join('\n');
+    scheduleWizardSave();
+  }
+
+  function parseServices(text){
+    return text.split('\n').map(line=>line.trim()).filter(Boolean).map(line=>{
+      const parts = line.split(',').map(v=>v.trim());
+      return { name:parts[0], price:Number(parts[1])||0 };
+    });
+  }
+
+  function parseFAQs(text){
+    return text.split('\n').map(line=>line.trim()).filter(Boolean).map(line=>{
+      const idx = line.indexOf('?');
+      if(idx < 0) return { question:line, answer:'' };
+      return { question:line.slice(0,idx+1).trim(), answer:line.slice(idx+1).trim() };
+    });
   }
 
   function collectWizardData(){
-    const services = document.getElementById('w_services').value.split('\n').filter(Boolean).map(line=>{
-      const [name, price] = line.split(',').map(s=>s.trim());
-      return { name, price: Number(price)||0 };
-    });
-    const offers = document.getElementById('w_offers').value.split('\n').filter(Boolean).map(line=>{
-      const [name, description, price] = line.split(',').map(s=>s.trim());
-      return { name, description: description||'', price: Number(price)||0 };
-    });
-    const faqs = document.getElementById('w_faqs').value.split('\n').filter(Boolean).map(line=>{
-      const [question, answer] = line.split('?').map(s=>s.trim());
-      return { question: question + '?', answer };
+    const hours = collectHours();
+    const services = parseServices(document.getElementById('w_services').value);
+    const offers = document.getElementById('w_offers').value.split('\n').map(line=>line.trim()).filter(Boolean).map(line=>{
+      const [name,description,price] = line.split(',').map(v=>v.trim());
+      return { name, description:description||'', price:Number(price)||0 };
     });
     const clientFields = {
-      business_name: document.getElementById('w_business_name').value,
+      business_name: document.getElementById('w_business_name').value.trim(),
+      owner_name: document.getElementById('w_owner_name').value.trim(),
       industry: document.getElementById('w_industry').value,
-      business_phone: document.getElementById('w_business_phone').value,
-      location: document.getElementById('w_location').value,
-      opening_hours: document.getElementById('w_opening_hours').value,
+      country: document.getElementById('w_country').value.trim(),
+      city: document.getElementById('w_city').value.trim(),
+      business_phone: document.getElementById('w_business_phone').value.trim(),
+      location: document.getElementById('w_location').value.trim(),
+      has_website: wizardHasWebsite,
+      website_url: wizardHasWebsite ? document.getElementById('w_website_url').value.trim() : null,
+      timezone: document.getElementById('w_timezone').value,
+      business_hours_json: hours,
+      opening_hours: hoursToSummary(hours),
       language: document.getElementById('w_language').value,
-      notification_number: document.getElementById('w_notification_number').value,
-      notification_email: document.getElementById('w_notification_email').value,
-      logo_url: document.getElementById('w_logo_preview').dataset.dataUrl || undefined,
-      whatsapp_connected: wizardIntegrations.whatsapp,
-      calendar_connected: wizardIntegrations.calendar,
-      sheets_connected: wizardIntegrations.sheets
+      notification_number: document.getElementById('w_notification_number').value.trim(),
+      notification_email: document.getElementById('w_notification_email').value.trim(),
+      whatsapp_connected: wizardIntegrations.whatsapp
     };
     const configFields = {
-      services, offers, faqs,
-      business_description: document.getElementById('w_description').value,
-      tone_of_voice: document.getElementById('w_tone').value,
-      qualification_questions: [
-        document.getElementById('w_q1').value,
-        document.getElementById('w_q2').value,
-        document.getElementById('w_q3').value
-      ],
-      hot_lead_rules: { keywords: document.getElementById('w_hot_keywords').value.split(',').map(s=>s.trim()).filter(Boolean) }
+      services,
+      offers,
+      faqs:parseFAQs(document.getElementById('w_faqs').value),
+      business_description:document.getElementById('w_description').value.trim(),
+      tone_of_voice:document.getElementById('w_tone').value,
+      qualification_questions:[document.getElementById('w_q1').value.trim(),document.getElementById('w_q2').value.trim(),document.getElementById('w_q3').value.trim()].filter(Boolean),
+      hot_lead_rules:{ keywords:document.getElementById('w_hot_keywords').value.split(',').map(v=>v.trim()).filter(Boolean) }
     };
     return { clientFields, configFields };
   }
 
-  async function saveWizardProgress(statusOverride){
+  async function saveWizardProgress(statusOverride, stepOverride){
+    try{
+      const { clientFields, configFields } = collectWizardData();
+      if(statusOverride) clientFields.setup_status = statusOverride;
+      clientFields.onboarding_step = stepOverride || wizardStep;
+      setAutosaveStatus('Saving…','saving');
+      await Promise.all([DataAPI.updateClient(clientFields),DataAPI.updateBotConfig(configFields)]);
+      setAutosaveStatus('All changes saved','saved');
+    }catch(error){
+      console.error('Wizard save failed:',error);
+      setAutosaveStatus('Save failed');
+    }
+  }
+
+  function renderWizardReview(){
     const { clientFields, configFields } = collectWizardData();
-    if(statusOverride) clientFields.setup_status = statusOverride;
-    await DataAPI.updateClient(clientFields);
-    await DataAPI.updateBotConfig(configFields);
+    document.getElementById('wizardReview').innerHTML = `
+      <div class="review-box"><h4>Business</h4><p>${clientFields.business_name} • ${clientFields.industry}\n${clientFields.city}, ${clientFields.country}\nWhatsApp: ${clientFields.business_phone}</p></div>
+      <div class="review-box"><h4>Services</h4><p>${configFields.services.map(s=>`${s.name}${s.price?` — ${s.price}`:''}`).join('\n') || 'No services added'}</p></div>
+      <div class="review-box"><h4>AI setup</h4><p>${configFields.tone_of_voice} • ${clientFields.language}\n${configFields.faqs.length} FAQs • ${configFields.qualification_questions.length} qualification questions</p></div>`;
+  }
+
+  function renderLaunchChecklist(){
+    const items = [
+      { label:'Business information', ok:!!document.getElementById('w_business_name').value.trim() },
+      { label:'Services and description', ok:!!document.getElementById('w_services').value.trim() && !!document.getElementById('w_description').value.trim() },
+      { label:'FAQs and AI settings', ok:!!document.getElementById('w_faqs').value.trim() },
+      { label:'Owner alert number', ok:!!document.getElementById('w_notification_number').value.trim() },
+      { label:'WhatsApp connection', ok:wizardIntegrations.whatsapp }
+    ];
+    document.getElementById('launchChecklist').innerHTML = items.map(item=>`<div class="item"><span>${item.label}</span><span class="status ${item.ok?'ok':'skip'}">${item.ok?'✅ Ready':'⚠️ Required'}</span></div>`).join('');
   }
 
   async function launchYesAI(){
-    await saveWizardProgress('trial');
-    await DataAPI.updateClient({ bot_status: 'on' });
+    for(const step of [1,2,4,6]){ if(!validateWizardStep(step)){ wizardStep=step; showWizardStep(step); return; } }
+    if(!wizardIntegrations.whatsapp){ alert('Please confirm the current WhatsApp connection is ready before launch.'); wizardStep=6; showWizardStep(6); return; }
+    await saveWizardProgress('trial', TOTAL_STEPS);
+    await DataAPI.updateClient({ bot_status:'on', setup_status:'trial', onboarding_completed_at:new Date().toISOString() });
     document.getElementById('wizardOverlay').classList.add('hidden');
-    alert('🚀 YES.AI is live! Your AI employee is now working — trial subscription started (14 days).');
+    alert('🚀 YES.AI is ready! Your 14-day trial has started.');
     await renderAll();
   }
 
