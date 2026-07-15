@@ -9,6 +9,6 @@
 // (local browser data, no real login required).
 
 window.YESAI_CONFIG = {
-  SUPABASE_URL: 'https://wrwbslqnqgdkmlrfaojw.supabase.co/rest/v1/',
+  SUPABASE_URL: 'https://wrwbslqnqgdkmlrfaojw.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_xUQ45iNy66RkVYnwV2IxbA_92WsiWHn'
 };
