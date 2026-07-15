@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Start YES.AI Free Trial</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <style>
+    :root{
+      --bg:#f5f6fc;--card:#fff;--ink:#0f1222;--muted:#62677a;
+      --blue:#2954f5;--purple:#7c3aed;--border:#e6e8f2;
+      --gradient:linear-gradient(135deg,#2954f5,#7c3aed);
+      --red:#dc2626;--green:#16a34a;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,sans-serif}
+    .wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
+    .card{width:430px;max-width:100%;background:var(--card);border-radius:22px;padding:34px;box-shadow:0 30px 80px -35px rgba(15,18,34,.4)}
+    .brand{font:700 24px "Space Grotesk",sans-serif;margin-bottom:8px}
+    .brand span{background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+    h1{font:700 28px "Space Grotesk",sans-serif;margin:8px 0}
+    .sub{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:22px}
+    .btn{width:100%;border:0;border-radius:11px;padding:12px 15px;font-weight:700;font-size:14px;cursor:pointer}
+    .btn-primary{background:var(--gradient);color:white}
+    .btn-google{background:white;border:1px solid var(--border);color:var(--ink);margin-bottom:14px}
+    .divider{display:flex;align-items:center;gap:10px;color:#9aa0b2;font-size:12px;margin:16px 0}
+    .divider:before,.divider:after{content:"";height:1px;background:var(--border);flex:1}
+    label{display:block;font-size:12.5px;font-weight:700;margin:12px 0 6px}
+    input{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:9px;font-size:14px}
+    .error,.success{padding:11px 12px;border-radius:9px;font-size:13px;margin-bottom:14px;display:none}
+    .error{background:#fef2f2;color:var(--red)}
+    .success{background:#ecfdf3;color:var(--green)}
+    .terms{font-size:11.5px;color:var(--muted);line-height:1.5;margin:14px 0}
+    .login-link{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
+    .login-link a{color:var(--blue);font-weight:700;text-decoration:none}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="brand">YES<span>.AI</span></div>
+    <h1>Start your 14-day free trial</h1>
+    <div class="sub">Create your account, then complete the setup wizard. No credit card required.</div>
+
+    <div id="errorBox" class="error"></div>
+    <div id="successBox" class="success"></div>
+
+    <button class="btn btn-google" onclick="signUpWithGoogle()">Continue with Google</button>
+
+    <div class="divider">or use email</div>
+
+    <label for="email">Business email</label>
+    <input id="email" type="email" autocomplete="email" placeholder="you@business.com">
+
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="new-password" placeholder="At least 8 characters">
+
+    <label for="confirmPassword">Confirm password</label>
+    <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Repeat your password">
+
+    <div class="terms">By creating an account, you agree to the YES.AI Terms and Privacy Policy.</div>
+
+    <button class="btn btn-primary" onclick="signUpWithEmail()">Create Free Account</button>
+
+    <div class="login-link">Already have an account? <a href="index.html">Log in</a></div>
+  </div>
+</div>
+
+<script>
+  const cfg = window.YESAI_CONFIG || {};
+  const errorBox = document.getElementById('errorBox');
+  const successBox = document.getElementById('successBox');
+
+  function showError(message){
+    errorBox.textContent = message;
+    errorBox.style.display = 'block';
+    successBox.style.display = 'none';
+  }
+
+  function showSuccess(message){
+    successBox.textContent = message;
+    successBox.style.display = 'block';
+    errorBox.style.display = 'none';
+  }
+
+  if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY){
+    showError('Supabase is not configured. Check client-dashboard/config.js.');
+  }
+
+  const sb = (cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY)
+    ? supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY)
+    : null;
+
+  async function provisionAndOpenWizard(){
+    const { data: { session } } = await sb.auth.getSession();
+    if(!session) return;
+
+    const { data, error } = await sb.rpc('provision_yesai_client');
+    if(error){
+      showError(error.message);
+      return;
+    }
+
+    window.location.href = 'index.html?onboarding=1';
+  }
+
+  async function signUpWithGoogle(){
+    if(!sb) return;
+    const redirectTo = new URL('signup.html', window.location.href).href;
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent'
+        }
+      }
+    });
+    if(error) showError(error.message);
+  }
+
+  async function signUpWithEmail(){
+    if(!sb) return;
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if(!email) return showError('Enter your business email.');
+    if(password.length < 8) return showError('Password must be at least 8 characters.');
+    if(password !== confirmPassword) return showError('Passwords do not match.');
+
+    const emailRedirectTo = new URL('signup.html', window.location.href).href;
+    const { data, error } = await sb.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo
+      }
+    });
+
+    if(error) return showError(error.message);
+
+    if(data.session){
+      await provisionAndOpenWizard();
+    }else{
+      showSuccess('Check your email and click the verification link. After verification, YES.AI will open your setup wizard automatically.');
+    }
+  }
+
+  sb?.auth.onAuthStateChange(async (event, session) => {
+    if(session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')){
+      await provisionAndOpenWizard();
+    }
+  });
+
+  provisionAndOpenWizard();
+</script>
+</body>
+</html>
