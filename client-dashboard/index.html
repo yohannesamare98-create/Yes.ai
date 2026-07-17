@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>YES.AI — Client Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -148,86 +148,57 @@
     .stat-grid{grid-template-columns:1fr;}
   }
 
-  /* PREMIUM AUTH */
-  .login-screen{padding:24px;background:
-    radial-gradient(circle at 15% 15%,rgba(41,84,245,.14),transparent 32%),
-    radial-gradient(circle at 85% 80%,rgba(124,58,237,.13),transparent 34%),var(--bg);}
-  .login-card{width:430px;max-width:100%;padding:34px;border:1px solid rgba(231,233,245,.9);}
-  .login-title{font-family:'Space Grotesk',sans-serif;font-size:27px;line-height:1.15;margin:14px 0 7px;}
-  .login-sub{font-size:13.5px;line-height:1.55;margin-bottom:20px;}
-  .auth-btn{width:100%;min-height:44px;display:flex;justify-content:center;align-items:center;gap:9px;}
-  .google-btn{background:#fff;border:1px solid var(--border);color:var(--ink);margin-bottom:13px;}
-  .auth-divider{display:flex;align-items:center;gap:10px;color:#9298aa;font-size:12px;margin:16px 0;}
-  .auth-divider:before,.auth-divider:after{content:'';height:1px;background:var(--border);flex:1;}
-  .auth-links{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0 16px;font-size:12.5px;}
-  .auth-link{border:0;background:none;color:var(--blue);font-weight:700;cursor:pointer;padding:0;text-decoration:none;}
-  .auth-secondary{margin-top:10px;width:100%;}
-  .signup-prompt{text-align:center;color:var(--ink-muted);font-size:13px;margin-top:18px;}
-  .login-success{background:#ecfdf3;color:var(--green);font-size:12.5px;padding:10px 12px;border-radius:8px;margin-bottom:14px;}
-  .btn[disabled]{opacity:.65;cursor:not-allowed;}
-  .auth-loader{position:fixed;inset:0;z-index:999;background:rgba(245,246,252,.94);display:flex;align-items:center;justify-content:center;}
-  .loader-card{text-align:center;background:#fff;border:1px solid var(--border);border-radius:18px;padding:28px 34px;box-shadow:0 24px 60px -35px rgba(15,18,34,.45);}
-  .spinner{width:30px;height:30px;margin:0 auto 12px;border:3px solid #e5e7ef;border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .status-card{background:linear-gradient(135deg,#111827,#1f2a44);color:#fff;border-radius:18px;padding:22px;margin-bottom:20px;box-shadow:0 18px 40px -25px rgba(15,18,34,.55);}
-  .status-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;}
-  .status-badge{font-size:11px;font-weight:800;letter-spacing:.06em;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.13);white-space:nowrap;}
-  .status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0;}
-  .status-item{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:11px;font-size:12px;}
-  .status-actions{display:flex;gap:10px;flex-wrap:wrap;}
-  .status-actions .btn{background:#fff;color:#111827;}
-
-  @media (max-width:700px){
-    html,body{max-width:100%;overflow-x:hidden;}
-    .login-screen{align-items:flex-start;padding:18px 14px;}
-    .login-card{margin-top:3vh;padding:25px 20px;border-radius:17px;}
-    .login-title{font-size:24px;}
-    .status-grid{grid-template-columns:1fr 1fr;}
-    .wizard-overlay{padding:0;align-items:stretch;}
-    .wizard-card{height:100dvh;max-height:100dvh;border-radius:0;width:100%;}
-    .wizard-head,.wizard-body,.wizard-foot{padding-left:18px;padding-right:18px;}
-    .wizard-foot{position:sticky;bottom:0;background:#fff;padding-bottom:calc(18px + env(safe-area-inset-bottom));}
-    input,select,textarea{font-size:16px!important;}
+  /* YES.AI Client Experience v2 */
+  html,body{width:100%;max-width:100%;overflow-x:hidden;}
+  body{min-height:100vh;background:
+    radial-gradient(circle at 10% 0%,rgba(76,81,255,.16),transparent 32%),
+    radial-gradient(circle at 100% 10%,rgba(145,70,255,.14),transparent 28%),
+    linear-gradient(180deg,#f7f8ff 0%,#eef1fb 100%);}
+  button,input,select,textarea{font-size:16px;}
+  .app-loading{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#0e1230,#252b68 58%,#5a2bbf);color:white;}
+  .loading-inner{text-align:center}.loading-logo{font:700 28px 'Space Grotesk',sans-serif;margin-bottom:18px}.loading-logo span{color:#9f8cff}
+  .loading-ring{width:38px;height:38px;border:3px solid rgba(255,255,255,.22);border-top-color:#fff;border-radius:50%;margin:0 auto;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+  .login-screen{padding:24px;min-height:100dvh;background:transparent;}
+  .login-card{width:min(440px,100%);padding:34px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.84);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 30px 80px -28px rgba(31,35,84,.45)}
+  .login-title{font-size:30px;margin:10px 0 6px}.login-sub{font-size:14px;line-height:1.5}.auth-divider{display:flex;align-items:center;gap:12px;color:#8b90a4;font-size:12px;margin:16px 0}.auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--border);flex:1}
+  .btn-google{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;background:white;border:1px solid var(--border);margin-bottom:2px}.auth-links{display:flex;justify-content:space-between;gap:12px;margin:2px 0 16px}.auth-link{border:0;background:transparent;color:var(--blue);padding:0;font-size:12px;font-weight:700;cursor:pointer}.trial-link{text-align:center;margin-top:18px;font-size:13px;color:var(--ink-muted)}.trial-link a{color:var(--blue);font-weight:700;text-decoration:none}
+  #dashboardWrap{min-height:100dvh;background:transparent;}
+  header{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  .tabs{position:sticky;top:67px;z-index:29;background:rgba(255,255,255,.86);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  .card,.stat-card,table{border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 18px 50px -30px rgba(28,34,84,.48)}
+  .status-hero{border-radius:24px;padding:24px;margin-bottom:20px;color:white;background:linear-gradient(135deg,#131936 0%,#293d91 52%,#6b38d1 100%);box-shadow:0 28px 70px -30px rgba(38,40,100,.75);position:relative;overflow:hidden}
+  .status-hero:after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;top:-100px;background:rgba(255,255,255,.12)}
+  .status-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.status-badge{padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.14);font-size:11px;font-weight:800;letter-spacing:.06em}.status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.status-mini{padding:13px;border-radius:14px;background:rgba(255,255,255,.09);font-size:12px}.status-mini strong{display:block;margin-top:4px;font-size:13px}.status-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}.status-actions .btn{position:relative;z-index:2}
+  .wizard-overlay{padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));touch-action:manipulation;}
+  .wizard-card{background:rgba(255,255,255,.98)}
+  body.wizard-open{overflow:hidden;position:fixed;width:100%;}
+  @media(max-width:600px){
+    .login-screen{align-items:flex-start;padding:calc(18px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));}.login-card{padding:24px 20px;border-radius:22px}.login-title{font-size:26px}
+    header{padding:12px 14px}.brand{font-size:15px}.tabs{top:59px}.header-right{gap:8px}.header-right .btn{padding:8px 12px}.tabs{padding:0 8px}.tab{padding:12px 10px}
+    main{padding:16px 12px calc(24px + env(safe-area-inset-bottom))}.status-grid{grid-template-columns:1fr 1fr}.status-top{flex-direction:column}.status-actions .btn{flex:1;min-width:135px}
+    .wizard-overlay{padding:0;align-items:stretch}.wizard-card{width:100%;height:100dvh;max-height:none;border-radius:0}.wizard-head{padding:calc(14px + env(safe-area-inset-top)) 16px 14px}.wizard-steps{padding:12px 16px 0}.wizard-body{padding:18px 16px}.wizard-foot{position:sticky;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;z-index:10}.wizard-foot .btn{min-height:46px}
   }
+
 </style>
 </head>
 <body>
 
-<!-- AUTH LOADING -->
-<div class="auth-loader" id="authLoader">
-  <div class="loader-card"><div class="spinner"></div><strong>Opening YES.AI</strong><div class="demo-note">Checking your secure session…</div></div>
-</div>
+<div class="app-loading" id="appLoading"><div class="loading-inner"><div class="loading-logo">YES<span>.AI</span></div><div class="loading-ring"></div></div></div>
 
 <!-- LOGIN SCREEN -->
 <div class="login-screen hidden" id="loginScreen">
   <div class="login-card">
     <div class="login-brand">YES<span>.AI</span></div>
-    <h1 class="login-title" id="authTitle">Welcome back</h1>
-    <div class="login-sub" id="authSubtitle">Log in to manage your AI employee, leads and appointments.</div>
+    <h1 class="login-title">Welcome back</h1>
+    <div class="login-sub">Log in to manage your AI employee, leads and appointments.</div>
     <div class="login-error hidden" id="loginError"></div>
-    <div class="login-success hidden" id="loginSuccess"></div>
-
-    <div id="normalLoginFields">
-      <button class="btn google-btn auth-btn" id="googleLoginBtn" onclick="handleGoogleLogin()">G&nbsp; Continue with Google</button>
-      <div class="auth-divider">or use email</div>
-      <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="email" placeholder="you@yourbusiness.ae"></div>
-      <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleLogin()"></div>
-      <div class="auth-links"><button class="auth-link" onclick="sendMagicLink()">Email me a magic link</button><button class="auth-link" onclick="showForgotPassword()">Forgot password?</button></div>
-      <button class="btn btn-primary auth-btn" id="loginBtn" onclick="handleLogin()">Log In</button>
-      <div class="signup-prompt">New to YES.AI? <a class="auth-link" href="signup.html">Start your 14-day free trial</a></div>
-    </div>
-
-    <div id="forgotFields" class="hidden">
-      <div class="field"><label>Account email</label><input type="email" id="forgotEmail" autocomplete="email" placeholder="you@yourbusiness.ae"></div>
-      <button class="btn btn-primary auth-btn" onclick="sendPasswordReset()">Send Reset Link</button>
-      <button class="btn btn-ghost auth-secondary" onclick="showNormalLogin()">Back to login</button>
-    </div>
-
-    <div id="recoveryFields" class="hidden">
-      <div class="field"><label>New password</label><input type="password" id="newPassword" autocomplete="new-password" placeholder="At least 8 characters"></div>
-      <div class="field"><label>Confirm password</label><input type="password" id="confirmNewPassword" autocomplete="new-password" placeholder="Repeat your password"></div>
-      <button class="btn btn-primary auth-btn" onclick="updateRecoveredPassword()">Save New Password</button>
-    </div>
+    <button class="btn btn-google" type="button" onclick="signInWithGoogle()"><strong>G</strong> Continue with Google</button>
+    <div class="auth-divider"><span>or use email</span></div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="email" placeholder="you@yourbusiness.ae"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••"></div>
+    <div class="auth-links"><button class="auth-link" type="button" onclick="sendMagicLink()">Email me a magic link</button><button class="auth-link" type="button" onclick="forgotPassword()">Forgot password?</button></div>
+    <button class="btn btn-primary" id="loginButton" onclick="handleLogin()">Log In</button>
+    <div class="trial-link">New to YES.AI? <a href="signup.html">Start your 14-day free trial</a></div>
     <div class="demo-note" id="loginModeNote"></div>
   </div>
 </div>
@@ -258,7 +229,7 @@
 
     <!-- OVERVIEW -->
     <div class="view active" id="tab-overview">
-      <div id="clientStatusCard"></div>
+      <div id="clientStatusHero"></div>
       <div id="setupReminders"></div>
       <div class="stat-grid" id="overviewStats"></div>
       <div class="card">
@@ -578,148 +549,109 @@
     }
   };
 
-  // =====================================================================
-  // AUTH
-  // =====================================================================
-  const authLoader = document.getElementById('authLoader');
-  const loginScreen = document.getElementById('loginScreen');
+  function asArray(value){
+    if(Array.isArray(value)) return value;
+    if(value == null || value === '') return [];
+    if(typeof value === 'string'){
+      try{ const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; }catch(e){ return []; }
+    }
+    return [];
+  }
 
-  function setAuthLoading(active, text){
-    authLoader.classList.toggle('hidden', !active);
-    if(text) authLoader.querySelector('.demo-note').textContent = text;
+  function showAppState(state){
+    const loading=document.getElementById('appLoading');
+    const login=document.getElementById('loginScreen');
+    const dashboard=document.getElementById('dashboardWrap');
+    loading.classList.toggle('hidden',state!=='loading');
+    login.classList.toggle('hidden',state!=='login');
+    dashboard.classList.toggle('hidden',state!=='dashboard');
   }
-  function clearAuthMessages(){
-    document.getElementById('loginError').classList.add('hidden');
-    document.getElementById('loginSuccess').classList.add('hidden');
-  }
-  function showAuthError(message){
-    const box=document.getElementById('loginError'); box.textContent=message; box.classList.remove('hidden');
-    document.getElementById('loginSuccess').classList.add('hidden');
-  }
-  function showAuthSuccess(message){
-    const box=document.getElementById('loginSuccess'); box.textContent=message; box.classList.remove('hidden');
-    document.getElementById('loginError').classList.add('hidden');
-  }
-  function showNormalLogin(){
-    clearAuthMessages();
-    document.getElementById('normalLoginFields').classList.remove('hidden');
-    document.getElementById('forgotFields').classList.add('hidden');
-    document.getElementById('recoveryFields').classList.add('hidden');
-    document.getElementById('authTitle').textContent='Welcome back';
-    document.getElementById('authSubtitle').textContent='Log in to manage your AI employee, leads and appointments.';
-  }
-  function showForgotPassword(){
-    clearAuthMessages();
-    document.getElementById('forgotEmail').value=document.getElementById('loginEmail').value;
-    document.getElementById('normalLoginFields').classList.add('hidden');
-    document.getElementById('forgotFields').classList.remove('hidden');
-    document.getElementById('recoveryFields').classList.add('hidden');
-    document.getElementById('authTitle').textContent='Reset your password';
-    document.getElementById('authSubtitle').textContent='We will send a secure password reset link to your email.';
-  }
-  function showRecovery(){
-    clearAuthMessages();
-    loginScreen.classList.remove('hidden'); setAuthLoading(false);
-    document.getElementById('normalLoginFields').classList.add('hidden');
-    document.getElementById('forgotFields').classList.add('hidden');
-    document.getElementById('recoveryFields').classList.remove('hidden');
-    document.getElementById('authTitle').textContent='Create a new password';
-    document.getElementById('authSubtitle').textContent='Choose a secure password for your YES.AI account.';
-  }
-  async function provisionCurrentUser(){
-    const { data:{ session } } = await sb.auth.getSession();
-    if(!session) return null;
-    let { data: row } = await sb.from('client_users').select('*').eq('auth_uid',session.user.id).maybeSingle();
+
+  function showAuthError(message){ const box=document.getElementById('loginError'); box.textContent=message; box.classList.remove('hidden'); }
+  function clearAuthError(){ document.getElementById('loginError').classList.add('hidden'); }
+  async function resolveClientForUser(user){
+    let { data: row } = await sb.from('client_users').select('*').eq('auth_uid', user.id).maybeSingle();
     if(!row){
       const { error: provisionError } = await sb.rpc('provision_yesai_client');
       if(provisionError) throw provisionError;
-      ({ data: row } = await sb.from('client_users').select('*').eq('auth_uid',session.user.id).maybeSingle());
+      const result = await sb.from('client_users').select('*').eq('auth_uid', user.id).maybeSingle();
+      row = result.data;
     }
-    if(!row) throw new Error('We could not finish creating your client account. Please contact YES.AI support.');
+    if(!row) throw new Error('Your client workspace could not be created. Please contact YES.AI support.');
     currentClientId=row.client_id;
-    document.getElementById('loggedInEmail').textContent=session.user.email || '';
+    document.getElementById('loggedInEmail').textContent=user.email||'';
     return row;
   }
-  async function finishAuthenticatedLogin(){
-    setAuthLoading(true,'Preparing your client dashboard…');
-    try{ await provisionCurrentUser(); await enterDashboard(); }
-    catch(error){ setAuthLoading(false); loginScreen.classList.remove('hidden'); showAuthError(error.message); }
-  }
+
+  // =====================================================================
+  // AUTH
+  // =====================================================================
   async function handleLogin(){
-    clearAuthMessages();
+    clearAuthError();
     const email=document.getElementById('loginEmail').value.trim();
     const password=document.getElementById('loginPassword').value;
-    if(!email || !password) return showAuthError('Enter your email and password.');
-    if(!SUPABASE_MODE) return showAuthError('Supabase is not configured.');
-    const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Logging in…';
-    const { error }=await sb.auth.signInWithPassword({email,password});
-    btn.disabled=false; btn.textContent='Log In';
-    if(error) return showAuthError(error.message);
-    await finishAuthenticatedLogin();
+    if(!email || !password){ showAuthError('Enter your email and password.'); return; }
+    const button=document.getElementById('loginButton'); button.disabled=true; button.textContent='Logging in…';
+    try{
+      const { data,error }=await sb.auth.signInWithPassword({email,password});
+      if(error) throw error;
+      await resolveClientForUser(data.user);
+      await enterDashboard();
+    }catch(error){ showAppState('login'); showAuthError(error.message||'Login failed.'); }
+    finally{ button.disabled=false; button.textContent='Log In'; }
   }
-  async function handleGoogleLogin(){
-    clearAuthMessages();
+
+  async function signInWithGoogle(){
+    clearAuthError();
     const redirectTo=new URL('index.html',window.location.href).href;
-    const { error }=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{prompt:'select_account'}}});
+    const { error }=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{access_type:'offline',prompt:'consent'}}});
     if(error) showAuthError(error.message);
   }
+
   async function sendMagicLink(){
-    clearAuthMessages();
-    const email=document.getElementById('loginEmail').value.trim();
-    if(!email) return showAuthError('Enter your email first, then choose magic link.');
-    const emailRedirectTo=new URL('index.html',window.location.href).href;
-    const { error }=await sb.auth.signInWithOtp({email,options:{emailRedirectTo,shouldCreateUser:false}});
-    if(error) return showAuthError(error.message);
-    showAuthSuccess('Magic link sent. Check your email to log in securely.');
+    clearAuthError(); const email=document.getElementById('loginEmail').value.trim();
+    if(!email){ showAuthError('Enter your email first.'); return; }
+    const { error }=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:new URL('index.html',window.location.href).href}});
+    if(error) showAuthError(error.message); else showAuthError('Magic link sent. Check your email.');
   }
-  async function sendPasswordReset(){
-    clearAuthMessages();
-    const email=document.getElementById('forgotEmail').value.trim();
-    if(!email) return showAuthError('Enter your account email.');
-    const redirectTo=new URL('index.html',window.location.href).href;
-    const { error }=await sb.auth.resetPasswordForEmail(email,{redirectTo});
-    if(error) return showAuthError(error.message);
-    showAuthSuccess('Password reset link sent. Check your email.');
+
+  async function forgotPassword(){
+    clearAuthError(); const email=document.getElementById('loginEmail').value.trim();
+    if(!email){ showAuthError('Enter your email first.'); return; }
+    const { error }=await sb.auth.resetPasswordForEmail(email,{redirectTo:new URL('index.html?recovery=1',window.location.href).href});
+    if(error) showAuthError(error.message); else showAuthError('Password reset email sent.');
   }
-  async function updateRecoveredPassword(){
-    clearAuthMessages();
-    const password=document.getElementById('newPassword').value;
-    const confirm=document.getElementById('confirmNewPassword').value;
-    if(password.length<8) return showAuthError('Password must be at least 8 characters.');
-    if(password!==confirm) return showAuthError('Passwords do not match.');
-    const { error }=await sb.auth.updateUser({password});
-    if(error) return showAuthError(error.message);
-    showAuthSuccess('Password updated successfully. Opening your dashboard…');
-    setTimeout(finishAuthenticatedLogin,700);
-  }
+
   async function handleLogout(){
     if(SUPABASE_MODE) await sb.auth.signOut();
-    window.location.href='index.html';
+    location.reload();
   }
+
   async function boot(){
-    document.getElementById('loginModeNote').textContent=SUPABASE_MODE ? 'Secure client access powered by YES.AI.' : 'Demo mode';
-    if(!SUPABASE_MODE){
-      db=loadDemoDB();
-      if(!db.clients.length){ setAuthLoading(false); loginScreen.classList.remove('hidden'); showAuthError('No demo data found.'); return; }
-      currentClientId=db.clients[0].id; await enterDashboard(); return;
-    }
-    sb.auth.onAuthStateChange((event,session)=>{ if(event==='PASSWORD_RECOVERY') showRecovery(); });
-    const hash=window.location.hash || '';
-    if(hash.includes('type=recovery')) return showRecovery();
-    const { data:{ session } }=await sb.auth.getSession();
-    if(session) await finishAuthenticatedLogin();
-    else { setAuthLoading(false); loginScreen.classList.remove('hidden'); showNormalLogin(); }
+    showAppState('loading');
+    document.getElementById('loginModeNote').textContent = SUPABASE_MODE ? 'Secure client access powered by YES.AI.' : 'Demo mode';
+    try{
+      if(!SUPABASE_MODE){
+        db=loadDemoDB(); if(!db.clients.length){ showAppState('login'); showAuthError('No demo data found.'); return; }
+        currentClientId=db.clients[0].id; await enterDashboard(); return;
+      }
+      const { data:{session}, error }=await sb.auth.getSession();
+      if(error) throw error;
+      if(!session){ showAppState('login'); return; }
+      await resolveClientForUser(session.user);
+      await enterDashboard();
+    }catch(error){ console.error(error); showAppState('login'); showAuthError(error.message||'Unable to open your dashboard.'); }
   }
+
   async function enterDashboard(){
-    setAuthLoading(false);
-    loginScreen.classList.add('hidden');
-    document.getElementById('dashboardWrap').classList.remove('hidden');
-    document.getElementById('demoBanner').classList.add('hidden');
-    if(!SUPABASE_MODE) document.getElementById('loggedInEmail').textContent='demo client';
-    await renderAll();
-    const client=await DataAPI.getClient();
-    const forceOnboarding=new URLSearchParams(location.search).get('onboarding')==='1';
-    if(forceOnboarding || client.setup_status==='needs_setup' || client.setup_status==='in_progress' || !client.setup_status) openWizard();
+    showAppState('loading');
+    try{
+      await renderAll();
+      showAppState('dashboard');
+      const client=await DataAPI.getClient();
+      const needsSetup=!client.setup_status || ['needs_setup','in_progress'].includes(client.setup_status);
+      if(needsSetup || new URLSearchParams(location.search).get('onboarding')==='1') setTimeout(()=>openWizard(),80);
+    }catch(error){ console.error('Dashboard load failed',error); showAppState('login'); showAuthError(error.message||'Dashboard failed to load.'); }
   }
 
   // =====================================================================
@@ -744,8 +676,8 @@
 
     const hot = leads.filter(l=>l.is_hot_lead).length;
     const booked = leads.filter(l=>l.status==='booked').length;
-    renderClientStatus(client);
     renderSetupReminders(client);
+    renderClientStatus(client, sub);
 
     document.getElementById('overviewStats').innerHTML = `
       <div class="stat-card"><div class="stat-num">${leads.length}</div><div class="stat-label">Total Leads</div></div>
@@ -770,15 +702,15 @@
       <tr><td>${a.service}</td><td>${new Date(a.appointment_time).toLocaleString()}</td><td><span class="pill active">${a.status}</span></td></tr>
     `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--ink-muted);">No appointments yet.</td></tr>`;
 
-    document.getElementById('s_services').value = (config.services||[]).map(s=>`${s.name}, ${s.price}`).join('\n');
+    document.getElementById('s_services').value = asArray(config.services).map(s=>`${s.name}, ${s.price}`).join('\n');
     document.getElementById('s_hours').value = client.opening_hours || '';
     document.getElementById('s_location').value = client.location || '';
     document.getElementById('s_tone').value = config.tone_of_voice || 'Friendly';
     document.getElementById('s_language').value = client.language || 'en';
 
-    document.getElementById('k_faqs').value = (config.faqs||[]).map(f=>`${f.question} ? ${f.answer}`).join('\n');
+    document.getElementById('k_faqs').value = asArray(config.faqs).map(f=>`${f.question} ? ${f.answer}`).join('\n');
     document.getElementById('k_description').value = config.business_description || '';
-    document.getElementById('k_offers').value = (config.offers||[]).map(o=>`${o.name}, ${o.description||''}, ${o.price||0}`).join('\n');
+    document.getElementById('k_offers').value = asArray(config.offers).map(o=>`${o.name}, ${o.description||''}, ${o.price||0}`).join('\n');
 
     renderIntegrationsTab(client);
 
@@ -792,25 +724,15 @@
     window.__latestLeads = leads;
   }
 
-  function renderClientStatus(client){
-    const complete = !!client.onboarding_completed_at;
-    const paused = client.bot_status === 'off' || client.setup_status === 'paused';
-    const connectionIssue = complete && !client.whatsapp_connected;
-    let state = 'SETUP NEEDED', title = 'Finish setting up YES.AI', message = 'Complete the setup wizard to activate your AI employee.';
-    if(paused){ state='PAUSED'; title='YES.AI is paused'; message='Resume service when you are ready to receive customer messages.'; }
-    else if(connectionIssue){ state='CONNECTION ISSUE'; title='Reconnect WhatsApp'; message='Your setup is complete, but WhatsApp needs attention.'; }
-    else if(complete && client.bot_status === 'on'){ state='LIVE'; title='YES.AI is Live'; message='Your AI employee is ready to respond, qualify leads and help book appointments.'; }
-    document.getElementById('clientStatusCard').innerHTML = `
-      <div class="status-card">
-        <div class="status-top"><div><h2 style="margin-bottom:5px;">${title}</h2><div style="font-size:13px;color:rgba(255,255,255,.74);">${message}</div></div><span class="status-badge">${state}</span></div>
-        <div class="status-grid">
-          <div class="status-item">AI replies<br><strong>${state==='LIVE'?'Active':'Not active'}</strong></div>
-          <div class="status-item">Lead tracking<br><strong>${complete?'Ready':'Setup needed'}</strong></div>
-          <div class="status-item">Appointments<br><strong>${client.calendar_connected?'Connected':'Available'}</strong></div>
-          <div class="status-item">Last checked<br><strong>Just now</strong></div>
-        </div>
-        <div class="status-actions"><button class="btn" onclick="openWizard()">View Setup</button><button class="btn btn-ghost" onclick="document.querySelector('[data-tab=integrations]').click()">Test Connections</button></div>
-      </div>`;
+  function renderClientStatus(client, sub){
+    const setupDone=['trial','complete','completed','live'].includes(client.setup_status);
+    const paused=client.bot_status==='paused' || ['past_due','cancelled','failed'].includes(sub.status);
+    const connected=!!client.whatsapp_connected;
+    let title='Finish setting up YES.AI', badge='SETUP NEEDED', subtitle='Complete the setup wizard to activate your AI employee.';
+    if(paused){ title='YES.AI is Paused'; badge='PAUSED'; subtitle='Review your subscription or bot settings to resume service.'; }
+    else if(setupDone && !connected){ title='Connect WhatsApp'; badge='CONNECTION ISSUE'; subtitle='Your setup is saved. Connect WhatsApp to start replying to customers.'; }
+    else if(setupDone && connected){ title='YES.AI is Live'; badge='LIVE'; subtitle='Your AI employee is ready to reply, qualify leads and book appointments.'; }
+    document.getElementById('clientStatusHero').innerHTML=`<section class="status-hero"><div class="status-top"><div><h2>${title}</h2><p style="margin-top:6px;color:rgba(255,255,255,.78);font-size:13px;max-width:560px">${subtitle}</p></div><span class="status-badge">${badge}</span></div><div class="status-grid"><div class="status-mini">AI replies<strong>${setupDone&&connected&&!paused?'Active':'Not active'}</strong></div><div class="status-mini">Lead tracking<strong>${setupDone?'Ready':'Setup needed'}</strong></div><div class="status-mini">Appointments<strong>${client.calendar_connected?'Connected':'Available'}</strong></div><div class="status-mini">Last checked<strong>Just now</strong></div></div><div class="status-actions"><button class="btn btn-primary" type="button" onclick="openWizard()">View Setup</button><button class="btn btn-ghost" type="button" onclick="document.querySelector('[data-tab=integrations]').click()">Test Connections</button></div></section>`;
   }
 
   function renderIntegrationsTab(client){
@@ -990,6 +912,10 @@
   }
 
   async function openWizard(){
+    if(!currentClientId){ showAuthError('Please log in again.'); return; }
+    const overlay=document.getElementById('wizardOverlay');
+    overlay.classList.remove('hidden');
+    document.body.classList.add('wizard-open');
     const client = await DataAPI.getClient();
     const config = await DataAPI.getBotConfig();
 
@@ -1005,14 +931,14 @@
     setWebsiteChoice(!!client.has_website || !!client.website_url);
     buildHoursGrid(client.business_hours_json || null);
 
-    document.getElementById('w_services').value = (config.services||[]).map(item=>`${item.name}, ${item.price||0}`).join('\n');
-    document.getElementById('w_offers').value = (config.offers||[]).map(item=>`${item.name}, ${item.description||''}, ${item.price||0}`).join('\n');
+    document.getElementById('w_services').value = asArray(config.services).map(item=>`${item.name}, ${item.price||0}`).join('\n');
+    document.getElementById('w_offers').value = asArray(config.offers).map(item=>`${item.name}, ${item.description||''}, ${item.price||0}`).join('\n');
     document.getElementById('w_description').value = config.business_description || '';
-    document.getElementById('w_faqs').value = (config.faqs||[]).map(item=>`${item.question} ? ${item.answer}`).join('\n');
+    document.getElementById('w_faqs').value = asArray(config.faqs).map(item=>`${item.question} ? ${item.answer}`).join('\n');
     document.getElementById('w_tone').value = config.tone_of_voice || 'Friendly';
     document.getElementById('w_language').value = client.language || 'en';
 
-    const questions = config.qualification_questions || [];
+    const questions = asArray(config.qualification_questions);
     document.getElementById('w_q1').value = questions[0] || 'What service or product do you need?';
     document.getElementById('w_q2').value = questions[1] || 'When would you like to buy or book?';
     document.getElementById('w_q3').value = questions[2] || 'What is your budget range?';
@@ -1023,7 +949,7 @@
     wizardIntegrations.whatsapp = !!client.whatsapp_connected;
     refreshIntegrationUI();
     wizardStep = Math.min(Math.max(Number(client.onboarding_step)||1,1),TOTAL_STEPS);
-    document.getElementById('wizardOverlay').classList.remove('hidden');
+    overlay.classList.remove('hidden');
     showWizardStep(wizardStep);
     setAutosaveStatus('All changes saved','saved');
 
@@ -1036,6 +962,7 @@
   async function closeWizard(){
     await saveWizardProgress(undefined, wizardStep);
     document.getElementById('wizardOverlay').classList.add('hidden');
+    document.body.classList.remove('wizard-open');
     await renderAll();
   }
 
@@ -1156,6 +1083,7 @@
     await saveWizardProgress('trial', TOTAL_STEPS);
     await DataAPI.updateClient({ bot_status:'on', setup_status:'trial', onboarding_completed_at:new Date().toISOString() });
     document.getElementById('wizardOverlay').classList.add('hidden');
+    document.body.classList.remove('wizard-open');
     alert('🚀 YES.AI is ready! Your 14-day trial has started.');
     await renderAll();
   }
