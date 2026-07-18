@@ -7,12 +7,47 @@
 // ============================================================
 
 import express from 'express';
+import crypto from 'crypto';
 import { getClientByWhatsappNumber, handleIncomingMessage } from '../lib/botEngine.js';
 import { supabase } from '../lib/supabaseClient.js';
 import { appendLeadToSheet } from '../lib/googleSheets.js';
 import { sendHotLeadAlert } from '../lib/notifications.js';
 
 const router = express.Router();
+
+// Verifies that an incoming POST really came from Meta by recomputing the
+// HMAC-SHA256 of the raw request body using your Meta App Secret and
+// comparing it to the X-Hub-Signature-256 header Meta sends. Without this,
+// anyone who discovers the webhook URL could POST fake messages — creating
+// bogus leads, triggering hot-lead alerts, and spending your OpenAI budget.
+//
+// Demo-mode safe: if WHATSAPP_APP_SECRET isn't set yet, this logs a warning
+// and allows the request through, matching the rest of the codebase's
+// pattern of not hard-failing on missing integration config.
+function verifyMetaSignature(req, res, next) {
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appSecret) {
+    console.warn('[whatsappWebhook] WHATSAPP_APP_SECRET not set — skipping signature verification (demo mode).');
+    return next();
+  }
+
+  const signatureHeader = req.get('x-hub-signature-256') || '';
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', appSecret)
+    .update(req.rawBody || Buffer.from(''))
+    .digest('hex');
+
+  const provided = Buffer.from(signatureHeader);
+  const expectedBuf = Buffer.from(expected);
+  const valid = provided.length === expectedBuf.length &&
+    crypto.timingSafeEqual(provided, expectedBuf);
+
+  if (!valid) {
+    console.warn('[whatsappWebhook] Rejected request with invalid X-Hub-Signature-256.');
+    return res.sendStatus(401);
+  }
+  next();
+}
 
 // In-memory conversation cache (replace with a proper store like Redis in production —
 // this is fine for a first launch with a modest number of concurrent conversations).
@@ -50,7 +85,7 @@ router.get('/webhook', (req, res) => {
 });
 
 // ---- Incoming messages ----
-router.post('/webhook', async (req, res) => {
+router.post('/webhook', verifyMetaSignature, async (req, res) => {
   // Respond to Meta immediately — always within a few seconds, per their requirements.
   res.sendStatus(200);
 

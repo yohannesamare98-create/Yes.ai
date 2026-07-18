@@ -464,6 +464,15 @@ What time do you prefer?</textarea></div>
   // =====================================================================
   let cachedClients = [], cachedLeads = [], cachedAppointments = [];
 
+  // Escapes untrusted text (customer names, WhatsApp messages, etc.) before
+  // it is inserted via innerHTML, so a message like "<img onerror=...>"
+  // sent by a customer on WhatsApp can never execute in the dashboard.
+  function escapeHtml(value){
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[ch]));
+  }
+
   function clientName(id){ return cachedClients.find(c=>c.id===id)?.business_name || id; }
   function subFor(client){ return Array.isArray(client.subscriptions) ? client.subscriptions[0] : client.subscriptions; }
 
@@ -534,11 +543,11 @@ What time do you prefer?</textarea></div>
     document.getElementById('leadsTableBody').innerHTML = cachedLeads.map(l=>`
       <tr>
         <td>${new Date(l.created_at).toLocaleDateString()}</td>
-        <td>${clientName(l.client_id)}</td>
-        <td>${l.customer_name||'-'}</td>
-        <td>${l.customer_whatsapp}</td>
-        <td>${l.message_summary}</td>
-        <td><span class="pill ${l.status==='booked'?'active':'off'}">${l.status}</span></td>
+        <td>${escapeHtml(clientName(l.client_id))}</td>
+        <td>${escapeHtml(l.customer_name)||'-'}</td>
+        <td>${escapeHtml(l.customer_whatsapp)}</td>
+        <td>${escapeHtml(l.message_summary)}</td>
+        <td><span class="pill ${l.status==='booked'?'active':'off'}">${escapeHtml(l.status)}</span></td>
         <td>${l.is_hot_lead ? '<span class="pill hot">HOT</span>' : ''}</td>
       </tr>`).join('') || `<tr><td colspan="7" class="empty">No leads yet.</td></tr>`;
   }
@@ -546,10 +555,10 @@ What time do you prefer?</textarea></div>
   function renderApptTable(){
     document.getElementById('apptTableBody').innerHTML = cachedAppointments.map(a=>`
       <tr>
-        <td>${clientName(a.client_id)}</td>
-        <td>${a.service}</td>
+        <td>${escapeHtml(clientName(a.client_id))}</td>
+        <td>${escapeHtml(a.service)}</td>
         <td>${new Date(a.appointment_time).toLocaleString()}</td>
-        <td><span class="pill active">${a.status}</span></td>
+        <td><span class="pill active">${escapeHtml(a.status)}</span></td>
       </tr>`).join('') || `<tr><td colspan="4" class="empty">No appointments yet.</td></tr>`;
   }
 
@@ -558,10 +567,10 @@ What time do you prefer?</textarea></div>
     document.getElementById('hotLeadsTableBody').innerHTML = hot.map(l=>`
       <tr>
         <td>${new Date(l.created_at).toLocaleDateString()}</td>
-        <td>${clientName(l.client_id)}</td>
-        <td>${l.customer_name||'-'}</td>
-        <td>${l.customer_whatsapp}</td>
-        <td>${l.message_summary}</td>
+        <td>${escapeHtml(clientName(l.client_id))}</td>
+        <td>${escapeHtml(l.customer_name)||'-'}</td>
+        <td>${escapeHtml(l.customer_whatsapp)}</td>
+        <td>${escapeHtml(l.message_summary)}</td>
       </tr>`).join('') || `<tr><td colspan="5" class="empty">No hot leads right now.</td></tr>`;
   }
 
@@ -724,7 +733,11 @@ What time do you prefer?</textarea></div>
         rows.push([c.business_name, s.plan, s.status, s.trial_end_date||'', s.next_billing_date||'', s.setup_fee_paid?'Yes':'No']);
       });
     }
-    const csv = rows.map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    // Prefix a leading apostrophe on any cell starting with =, +, -, or @ so
+    // spreadsheet apps (Excel/Sheets) treat it as text, not a formula —
+    // customer_name/message_summary come from WhatsApp and are untrusted.
+    const csvSafe = v => { const s = (v??'').toString(); return /^[=+\-@]/.test(s) ? `'${s}` : s; };
+    const csv = rows.map(r=>r.map(v=>`"${csvSafe(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], {type:'text/csv'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
