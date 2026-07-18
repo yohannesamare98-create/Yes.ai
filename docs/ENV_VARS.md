@@ -10,6 +10,8 @@ Leave any group blank to keep that integration in demo mode.
 | `WHATSAPP_TOKEN` | Sending WhatsApp messages (both customer replies and hot-lead alerts) | Meta Business App → WhatsApp → API Setup |
 | `WHATSAPP_PHONE_NUMBER_ID` | Which WhatsApp number sends replies | Meta Business App → WhatsApp → API Setup |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification handshake | You choose this value yourself, then enter the same value in Meta's webhook config |
+| `WHATSAPP_APP_SECRET` | Verifying that incoming webhook POSTs really came from Meta (`X-Hub-Signature-256`) | Meta Business App → Settings → Basic → App Secret |
+| `ALLOWED_ORIGINS` | Restricts which website origins can call `/api` from a browser | Comma-separated list, e.g. `https://app.yourdomain.com,https://admin.yourdomain.com`. Leave blank in demo mode. |
 | `OPENAI_API_KEY` | The AI replies | https://platform.openai.com/api-keys |
 | `SUPABASE_URL` | Database connection | Supabase project → Settings → API |
 | `SUPABASE_KEY` | (public/anon key, if used client-side later) | Supabase project → Settings → API |

@@ -6,6 +6,9 @@
  
 import 'dotenv/config';
 import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import whatsappWebhook from './routes/whatsappWebhook.js';
 import stripeRoutes from './routes/stripeRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
@@ -13,12 +16,43 @@ import { supabase } from './lib/supabaseClient.js';
  
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Sets standard security headers (X-Content-Type-Options, HSTS, etc).
+// Meta's webhook POSTs don't render anything in a browser, so this is safe
+// to apply globally with no compatibility downside.
+app.use(helmet());
+
+// Restrict browser-based cross-origin requests to your own dashboards.
+// Leave ALLOWED_ORIGINS unset in demo mode to allow all origins (matches
+// prior behavior); set it to a comma-separated list in production, e.g.
+// "https://app.yourdomain.com,https://admin.yourdomain.com".
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',').map(o => o.trim()).filter(Boolean);
+app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : {}));
+
+// General API rate limit — generous enough for normal dashboard use, but
+// stops a leaked URL or scraper from hammering the backend or running up
+// your Supabase/OpenAI usage.
+const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 120, standardHeaders: true, legacyHeaders: false });
+app.use('/api', apiLimiter);
+
+// Tighter limit on the public webhook endpoint specifically, since it's the
+// one route Meta calls without any auth token of its own.
+const webhookLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
+app.use('/webhook', webhookLimiter);
  
 // NOTE: stripeRoutes registers its own express.raw() body parser for the
 // webhook path specifically — mount it BEFORE any global express.json().
 app.use('/api', stripeRoutes);
  
-app.use(express.json());
+// Capture the raw request body alongside the parsed JSON so the WhatsApp
+// webhook route can verify Meta's X-Hub-Signature-256 header against the
+// exact bytes that were sent (HMAC verification needs the raw bytes, not
+// the re-serialized JSON, which can differ in whitespace/key order).
+app.use(express.json({
+  limit: '1mb',
+  verify: (req, res, buf) => { req.rawBody = buf; }
+}));
 app.use('/api', clientRoutes);
 app.use('/', whatsappWebhook); // exposes GET/POST /webhook for Meta
  

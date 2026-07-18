@@ -2,53 +2,75 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>YES.AI — Client Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <style>
   :root{
-    --bg:#f5f6fc;--card:#fff;--ink:#0f1222;--ink-muted:#5b6072;
-    --blue:#2954f5;--purple:#7c3aed;--gradient:linear-gradient(135deg,#2954f5,#7c3aed);
-    --border:#e7e9f5;--green:#16a34a;--amber:#d97706;--red:#dc2626;
+    --bg:#eef2ff;--card:rgba(255,255,255,.88);--ink:#11162b;--ink-muted:#697089;
+    --blue:#3157f6;--purple:#8b3df0;--cyan:#16b8d4;--gradient:linear-gradient(135deg,#3157f6 0%,#7045f5 55%,#a33df0 100%);
+    --border:rgba(93,104,160,.16);--green:#16a86b;--amber:#d98a18;--red:#dc3d54;
+    --shadow:0 22px 60px -32px rgba(40,45,95,.38);
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
-  body{background:var(--bg);color:var(--ink);}
+  html,body{min-height:100%;overflow-x:hidden;}
+  body{background:
+    radial-gradient(circle at 8% 5%,rgba(49,87,246,.16),transparent 31%),
+    radial-gradient(circle at 92% 12%,rgba(163,61,240,.14),transparent 30%),
+    linear-gradient(150deg,#f8faff 0%,#eef2ff 48%,#f8f1ff 100%);color:var(--ink);padding-bottom:env(safe-area-inset-bottom);}
   h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:700;}
   .hidden{display:none !important;}
 
-  /* LOGIN */
-  .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
-  .login-card{background:#fff;border-radius:20px;padding:40px;width:380px;box-shadow:0 30px 60px -30px rgba(15,18,34,0.35);}
-  .login-brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;}
+  /* AUTH + APP SHELL */
+  .app-loading{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:linear-gradient(145deg,#f6f8ff,#f2edff);}
+  .loading-orb{width:56px;height:56px;border-radius:50%;border:5px solid rgba(49,87,246,.14);border-top-color:var(--blue);animation:spin .8s linear infinite;margin:0 auto 16px;}
+  .loading-copy{text-align:center;color:var(--ink-muted);font-size:13px;font-weight:700;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .login-screen{min-height:100svh;display:flex;align-items:center;justify-content:center;padding:calc(24px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom));}
+  .login-card{position:relative;overflow:hidden;background:rgba(255,255,255,.9);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(255,255,255,.8);border-radius:28px;padding:34px;width:min(430px,100%);box-shadow:0 32px 90px -38px rgba(34,37,88,.55);}
+  .login-card:before{content:"";position:absolute;inset:0 0 auto;height:5px;background:var(--gradient);}
+  .login-brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;margin-bottom:12px;}
   .login-brand span{background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
-  .login-sub{font-size:13px;color:var(--ink-muted);margin-bottom:24px;}
+  .login-title{font-size:30px;line-height:1.08;margin-bottom:8px;}
+  .login-sub{font-size:13.5px;color:var(--ink-muted);line-height:1.5;margin-bottom:22px;}
+  .auth-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;min-height:47px;}
+  .auth-divider{display:flex;align-items:center;gap:12px;color:#9298aa;font-size:12px;margin:17px 0;}
+  .auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--border);flex:1;}
+  .auth-links{display:flex;justify-content:space-between;gap:12px;margin:-2px 0 15px;}
+  .auth-link{border:0;background:none;color:var(--blue);font-size:12px;font-weight:700;padding:4px 0;cursor:pointer;}
+  .trial-link{text-align:center;margin-top:18px;font-size:13px;color:var(--ink-muted);}
+  .trial-link a{color:var(--blue);font-weight:800;text-decoration:none;}
+  .secure-note{text-align:center;margin-top:16px;color:#9298aa;font-size:11.5px;}
   .field{margin-bottom:14px;}
-  .field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:5px;}
-  .field input,.field textarea,.field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;}
+  .field label{display:block;font-size:12.5px;font-weight:700;margin-bottom:6px;}
+  .field input,.field textarea,.field select{width:100%;padding:12px 13px;border:1px solid var(--border);border-radius:11px;font-size:16px;font-family:'Inter',sans-serif;background:rgba(255,255,255,.9);outline:none;transition:.2s;}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:rgba(49,87,246,.6);box-shadow:0 0 0 4px rgba(49,87,246,.09);}
   .field textarea{min-height:80px;resize:vertical;}
-  .btn{border:none;padding:10px 18px;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer;}
-  .btn-primary{background:var(--gradient);color:#fff;}
-  .login-card .btn-primary{width:100%;}
-  .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--ink);}
+  .btn{border:none;padding:11px 18px;border-radius:11px;font-weight:700;font-size:13.5px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+  .btn:disabled{opacity:.6;cursor:not-allowed;}
+  .btn-primary{background:var(--gradient);color:#fff;box-shadow:0 10px 24px -14px rgba(49,87,246,.8);}
+  .btn-ghost{background:rgba(255,255,255,.76);border:1px solid var(--border);color:var(--ink);}
   .btn-danger{background:#fef2f2;color:var(--red);}
-  .login-error{background:#fef2f2;color:var(--red);font-size:12.5px;padding:10px 12px;border-radius:8px;margin-bottom:14px;}
-  .demo-note{font-size:12px;color:var(--ink-muted);margin-top:16px;text-align:center;}
+  .login-error{background:#fff0f2;border:1px solid rgba(220,61,84,.18);color:var(--red);font-size:12.5px;padding:11px 12px;border-radius:10px;margin-bottom:14px;line-height:1.45;}
+  body[data-app-state="loading"] #loginScreen,body[data-app-state="loading"] #dashboardWrap{display:none!important;}
+  body[data-app-state="login"] #dashboardWrap{display:none!important;}
+  body[data-app-state="dashboard"] #loginScreen{display:none!important;}
 
-  header{background:#fff;border-bottom:1px solid var(--border);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;}
+  header{background:rgba(255,255,255,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;}
   .brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;}
   .brand span{background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
   .header-right{display:flex;align-items:center;gap:14px;}
   .header-email{font-size:12.5px;color:var(--ink-muted);}
-  .tabs{display:flex;gap:6px;padding:0 32px;background:#fff;border-bottom:1px solid var(--border);}
+  .tabs{display:flex;gap:6px;padding:0 32px;background:rgba(255,255,255,.76);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--border);}
   .tab{padding:14px 16px;font-size:13.5px;font-weight:600;color:var(--ink-muted);cursor:pointer;border-bottom:2px solid transparent;}
   .tab.active{color:var(--blue);border-color:var(--blue);}
   main{padding:32px;max-width:1100px;margin:0 auto;}
   .view{display:none;}
   .view.active{display:block;}
   .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
-  .stat-card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 8px 30px -20px rgba(15,18,34,0.3);}
+  .stat-card{background:var(--card);border:1px solid rgba(255,255,255,.82);border-radius:18px;padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(14px);}
   .stat-num{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;}
   .stat-label{font-size:12.5px;color:var(--ink-muted);}
   table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 8px 30px -20px rgba(15,18,34,0.3);}
@@ -61,7 +83,7 @@
   .pill.new{background:#eef2ff;color:var(--blue);}
   .pill.trialing{background:#eef2ff;color:var(--blue);}
   .pill.past_due{background:#fff7ed;color:var(--amber);}
-  .card{background:var(--card);border-radius:16px;padding:24px;margin-bottom:20px;box-shadow:0 8px 30px -20px rgba(15,18,34,0.3);}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.82);border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:var(--shadow);backdrop-filter:blur(14px);}
   .card h3{font-size:16px;margin-bottom:16px;}
   .plan-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);}
   .plan-row:last-child{border-bottom:none;}
@@ -69,7 +91,21 @@
   .bar-label{width:110px;font-size:12.5px;color:var(--ink-muted);}
   .bar-track{flex:1;height:10px;background:var(--border);border-radius:100px;overflow:hidden;}
   .bar-fill{height:100%;background:var(--gradient);}
-  .demo-banner{background:#eef2ff;color:var(--blue);padding:10px 16px;border-radius:10px;font-size:12.5px;font-weight:600;margin-bottom:20px;}
+  .demo-banner{display:none;}
+  .status-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#151a33 0%,#292452 52%,#49307d 100%);color:#fff;border-radius:24px;padding:24px;margin-bottom:20px;box-shadow:0 28px 70px -38px rgba(37,30,92,.8);}
+  .status-hero:after{content:"";position:absolute;width:210px;height:210px;border-radius:50%;right:-70px;top:-95px;background:radial-gradient(circle,rgba(145,93,255,.7),transparent 68%);}
+  .status-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;position:relative;z-index:1;}
+  .status-title{font-size:25px;margin-bottom:7px;}
+  .status-copy{font-size:13px;line-height:1.45;color:rgba(255,255,255,.72);max-width:520px;}
+  .status-badge{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.12);padding:7px 11px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;white-space:nowrap;}
+  .status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px;position:relative;z-index:1;}
+  .status-item{padding:12px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.1);border-radius:14px;}
+  .status-item small{display:block;color:rgba(255,255,255,.58);font-size:10.5px;margin-bottom:4px;}
+  .status-item strong{font-size:12.5px;}
+  .status-actions{display:flex;gap:9px;margin-top:16px;position:relative;z-index:2;}
+  .status-actions .btn{min-height:43px;}
+  .status-actions .btn-light{background:#fff;color:#242949;}
+  .status-actions .btn-soft{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.17);}
 
   /* SETUP WIZARD */
   .wizard-overlay{position:fixed;inset:0;background:rgba(15,18,34,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -148,58 +184,46 @@
     .stat-grid{grid-template-columns:1fr;}
   }
 
-  /* YES.AI Client Experience v2 */
-  html,body{width:100%;max-width:100%;overflow-x:hidden;}
-  body{min-height:100vh;background:
-    radial-gradient(circle at 10% 0%,rgba(76,81,255,.16),transparent 32%),
-    radial-gradient(circle at 100% 10%,rgba(145,70,255,.14),transparent 28%),
-    linear-gradient(180deg,#f7f8ff 0%,#eef1fb 100%);}
-  button,input,select,textarea{font-size:16px;}
-  .app-loading{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#0e1230,#252b68 58%,#5a2bbf);color:white;}
-  .loading-inner{text-align:center}.loading-logo{font:700 28px 'Space Grotesk',sans-serif;margin-bottom:18px}.loading-logo span{color:#9f8cff}
-  .loading-ring{width:38px;height:38px;border:3px solid rgba(255,255,255,.22);border-top-color:#fff;border-radius:50%;margin:0 auto;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-  .login-screen{padding:24px;min-height:100dvh;background:transparent;}
-  .login-card{width:min(440px,100%);padding:34px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.84);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 30px 80px -28px rgba(31,35,84,.45)}
-  .login-title{font-size:30px;margin:10px 0 6px}.login-sub{font-size:14px;line-height:1.5}.auth-divider{display:flex;align-items:center;gap:12px;color:#8b90a4;font-size:12px;margin:16px 0}.auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--border);flex:1}
-  .btn-google{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;background:white;border:1px solid var(--border);margin-bottom:2px}.auth-links{display:flex;justify-content:space-between;gap:12px;margin:2px 0 16px}.auth-link{border:0;background:transparent;color:var(--blue);padding:0;font-size:12px;font-weight:700;cursor:pointer}.trial-link{text-align:center;margin-top:18px;font-size:13px;color:var(--ink-muted)}.trial-link a{color:var(--blue);font-weight:700;text-decoration:none}
-  #dashboardWrap{min-height:100dvh;background:transparent;}
-  header{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-  .tabs{position:sticky;top:67px;z-index:29;background:rgba(255,255,255,.86);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-  .card,.stat-card,table{border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 18px 50px -30px rgba(28,34,84,.48)}
-  .status-hero{border-radius:24px;padding:24px;margin-bottom:20px;color:white;background:linear-gradient(135deg,#131936 0%,#293d91 52%,#6b38d1 100%);box-shadow:0 28px 70px -30px rgba(38,40,100,.75);position:relative;overflow:hidden}
-  .status-hero:after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;top:-100px;background:rgba(255,255,255,.12)}
-  .status-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.status-badge{padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.14);font-size:11px;font-weight:800;letter-spacing:.06em}.status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.status-mini{padding:13px;border-radius:14px;background:rgba(255,255,255,.09);font-size:12px}.status-mini strong{display:block;margin-top:4px;font-size:13px}.status-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}.status-actions .btn{position:relative;z-index:2}
-  .wizard-overlay{padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));touch-action:manipulation;}
-  .wizard-card{background:rgba(255,255,255,.98)}
-  body.wizard-open{overflow:hidden;position:fixed;width:100%;}
-  @media(max-width:600px){
-    .login-screen{align-items:flex-start;padding:calc(18px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));}.login-card{padding:24px 20px;border-radius:22px}.login-title{font-size:26px}
-    header{padding:12px 14px}.brand{font-size:15px}.tabs{top:59px}.header-right{gap:8px}.header-right .btn{padding:8px 12px}.tabs{padding:0 8px}.tab{padding:12px 10px}
-    main{padding:16px 12px calc(24px + env(safe-area-inset-bottom))}.status-grid{grid-template-columns:1fr 1fr}.status-top{flex-direction:column}.status-actions .btn{flex:1;min-width:135px}
-    .wizard-overlay{padding:0;align-items:stretch}.wizard-card{width:100%;height:100dvh;max-height:none;border-radius:0}.wizard-head{padding:calc(14px + env(safe-area-inset-top)) 16px 14px}.wizard-steps{padding:12px 16px 0}.wizard-body{padding:18px 16px}.wizard-foot{position:sticky;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;z-index:10}.wizard-foot .btn{min-height:46px}
+  @media (max-width:600px){
+    .login-card{padding:29px 20px 24px;border-radius:23px;}
+    .login-title{font-size:27px;}
+    header{position:sticky;top:0;z-index:80;padding-top:calc(13px + env(safe-area-inset-top));}
+    .brand{font-size:15px;}
+    .tabs{position:sticky;top:calc(61px + env(safe-area-inset-top));z-index:70;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .tabs::-webkit-scrollbar{display:none;}
+    main{padding:18px 13px 30px;}
+    .wizard-overlay{padding:0;align-items:stretch;background:#fff;}
+    .wizard-card{width:100%;height:100svh;max-height:none;border-radius:0;box-shadow:none;}
+    .wizard-head{padding:calc(14px + env(safe-area-inset-top)) 17px 14px;}
+    .wizard-steps{padding:13px 17px 0;}
+    .wizard-body{padding:19px 17px 110px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+    .wizard-foot{position:fixed;left:0;right:0;bottom:0;z-index:240;padding:13px 17px calc(13px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+    .wizard-foot .btn{min-height:46px;}
+    .wizard-meta{display:none;}
+    .status-grid{grid-template-columns:repeat(2,1fr);}
+    .status-top{flex-direction:column;}
+    .status-actions{display:grid;grid-template-columns:1fr 1fr;}
   }
-
 </style>
 </head>
-<body>
-
-<div class="app-loading" id="appLoading"><div class="loading-inner"><div class="loading-logo">YES<span>.AI</span></div><div class="loading-ring"></div></div></div>
+<body data-app-state="loading">
+<div class="app-loading" id="appLoading"><div><div class="loading-orb"></div><div class="loading-copy">Preparing your YES.AI workspace…</div></div></div>
 
 <!-- LOGIN SCREEN -->
-<div class="login-screen hidden" id="loginScreen">
+<div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="login-brand">YES<span>.AI</span></div>
     <h1 class="login-title">Welcome back</h1>
     <div class="login-sub">Log in to manage your AI employee, leads and appointments.</div>
     <div class="login-error hidden" id="loginError"></div>
-    <button class="btn btn-google" type="button" onclick="signInWithGoogle()"><strong>G</strong> Continue with Google</button>
-    <div class="auth-divider"><span>or use email</span></div>
-    <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="email" placeholder="you@yourbusiness.ae"></div>
-    <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••"></div>
-    <div class="auth-links"><button class="auth-link" type="button" onclick="sendMagicLink()">Email me a magic link</button><button class="auth-link" type="button" onclick="forgotPassword()">Forgot password?</button></div>
-    <button class="btn btn-primary" id="loginButton" onclick="handleLogin()">Log In</button>
+    <button class="btn btn-ghost auth-btn" id="googleLoginBtn" type="button" onclick="handleGoogleLogin()">G&nbsp; Continue with Google</button>
+    <div class="auth-divider">or use email</div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="email" inputmode="email" placeholder="you@yourbusiness.ae"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleLogin()"></div>
+    <div class="auth-links"><button class="auth-link" type="button" onclick="handleMagicLink()">Email me a magic link</button><button class="auth-link" type="button" onclick="handleForgotPassword()">Forgot password?</button></div>
+    <button class="btn btn-primary auth-btn" id="emailLoginBtn" type="button" onclick="handleLogin()">Log In</button>
     <div class="trial-link">New to YES.AI? <a href="signup.html">Start your 14-day free trial</a></div>
-    <div class="demo-note" id="loginModeNote"></div>
+    <div class="secure-note" id="loginModeNote">Secure client access powered by YES.AI.</div>
   </div>
 </div>
 
@@ -549,77 +573,92 @@
     }
   };
 
-  function asArray(value){
+  // Escapes untrusted text (customer names, WhatsApp messages, etc.) before
+  // it is inserted via innerHTML, so a message like "<img onerror=...>"
+  // sent by a customer on WhatsApp can never execute in the dashboard.
+  function escapeHtml(value){
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[ch]));
+  }
+
+  function normalizeArray(value){
     if(Array.isArray(value)) return value;
     if(value == null || value === '') return [];
     if(typeof value === 'string'){
-      try{ const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; }catch(e){ return []; }
+      try{ const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; }
+      catch{ return []; }
     }
     return [];
   }
 
-  function showAppState(state){
-    const loading=document.getElementById('appLoading');
-    const login=document.getElementById('loginScreen');
-    const dashboard=document.getElementById('dashboardWrap');
-    loading.classList.toggle('hidden',state!=='loading');
-    login.classList.toggle('hidden',state!=='login');
-    dashboard.classList.toggle('hidden',state!=='dashboard');
+  function setAppState(state){
+    document.body.dataset.appState = state;
+    document.getElementById('appLoading')?.classList.toggle('hidden', state !== 'loading');
+    document.getElementById('loginScreen')?.classList.toggle('hidden', state !== 'login');
+    document.getElementById('dashboardWrap')?.classList.toggle('hidden', state !== 'dashboard');
   }
 
-  function showAuthError(message){ const box=document.getElementById('loginError'); box.textContent=message; box.classList.remove('hidden'); }
-  function clearAuthError(){ document.getElementById('loginError').classList.add('hidden'); }
-  async function resolveClientForUser(user){
-    let { data: row } = await sb.from('client_users').select('*').eq('auth_uid', user.id).maybeSingle();
-    if(!row){
-      const { error: provisionError } = await sb.rpc('provision_yesai_client');
-      if(provisionError) throw provisionError;
-      const result = await sb.from('client_users').select('*').eq('auth_uid', user.id).maybeSingle();
-      row = result.data;
-    }
-    if(!row) throw new Error('Your client workspace could not be created. Please contact YES.AI support.');
-    currentClientId=row.client_id;
-    document.getElementById('loggedInEmail').textContent=user.email||'';
-    return row;
+  function showLoginMessage(message, success=false){
+    const box=document.getElementById('loginError');
+    box.textContent=message;
+    box.style.background=success?'#ecfdf3':'#fff0f2';
+    box.style.color=success?'var(--green)':'var(--red)';
+    box.classList.remove('hidden');
   }
 
   // =====================================================================
   // AUTH
   // =====================================================================
   async function handleLogin(){
-    clearAuthError();
-    const email=document.getElementById('loginEmail').value.trim();
-    const password=document.getElementById('loginPassword').value;
-    if(!email || !password){ showAuthError('Enter your email and password.'); return; }
-    const button=document.getElementById('loginButton'); button.disabled=true; button.textContent='Logging in…';
-    try{
-      const { data,error }=await sb.auth.signInWithPassword({email,password});
-      if(error) throw error;
-      await resolveClientForUser(data.user);
-      await enterDashboard();
-    }catch(error){ showAppState('login'); showAuthError(error.message||'Login failed.'); }
-    finally{ button.disabled=false; button.textContent='Log In'; }
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorBox = document.getElementById('loginError');
+    const button = document.getElementById('emailLoginBtn');
+    errorBox.classList.add('hidden');
+    if(!email || !password){ showLoginMessage('Enter your email and password.'); return; }
+    button.disabled=true; button.textContent='Logging in…';
+
+    if(!SUPABASE_MODE){ showError('Supabase is not configured.'); button.disabled=false; button.textContent='Log In'; return; }
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ showError(error.message); button.disabled=false; button.textContent='Log In'; return; }
+
+    const { data: clientUserRow } = await sb.from('client_users').select('*').eq('auth_uid', data.user.id).single();
+    if(!clientUserRow){
+      showError('This account is not linked to a client. Ask YES.AI support to add you in client_users.');
+      await sb.auth.signOut();
+      button.disabled=false; button.textContent='Log In';
+      return;
+    }
+
+    currentClientId = clientUserRow.client_id;
+    document.getElementById('loggedInEmail').textContent = data.user.email;
+    await enterDashboard();
+
+    function showError(msg){ errorBox.textContent = msg; errorBox.classList.remove('hidden'); }
   }
 
-  async function signInWithGoogle(){
-    clearAuthError();
+  async function handleGoogleLogin(){
+    if(!SUPABASE_MODE) return showLoginMessage('Supabase is not configured.');
+    const btn=document.getElementById('googleLoginBtn'); btn.disabled=true; btn.textContent='Opening Google…';
     const redirectTo=new URL('index.html',window.location.href).href;
     const { error }=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{access_type:'offline',prompt:'consent'}}});
-    if(error) showAuthError(error.message);
+    if(error){ showLoginMessage(error.message); btn.disabled=false; btn.textContent='G  Continue with Google'; }
   }
 
-  async function sendMagicLink(){
-    clearAuthError(); const email=document.getElementById('loginEmail').value.trim();
-    if(!email){ showAuthError('Enter your email first.'); return; }
+  async function handleMagicLink(){
+    const email=document.getElementById('loginEmail').value.trim();
+    if(!email) return showLoginMessage('Enter your email first, then request the magic link.');
     const { error }=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:new URL('index.html',window.location.href).href}});
-    if(error) showAuthError(error.message); else showAuthError('Magic link sent. Check your email.');
+    if(error) showLoginMessage(error.message); else showLoginMessage('Magic link sent. Check your email.',true);
   }
 
-  async function forgotPassword(){
-    clearAuthError(); const email=document.getElementById('loginEmail').value.trim();
-    if(!email){ showAuthError('Enter your email first.'); return; }
+  async function handleForgotPassword(){
+    const email=document.getElementById('loginEmail').value.trim();
+    if(!email) return showLoginMessage('Enter your email first.');
     const { error }=await sb.auth.resetPasswordForEmail(email,{redirectTo:new URL('index.html?recovery=1',window.location.href).href});
-    if(error) showAuthError(error.message); else showAuthError('Password reset email sent.');
+    if(error) showLoginMessage(error.message); else showLoginMessage('Password reset email sent.',true);
   }
 
   async function handleLogout(){
@@ -628,30 +667,55 @@
   }
 
   async function boot(){
-    showAppState('loading');
-    document.getElementById('loginModeNote').textContent = SUPABASE_MODE ? 'Secure client access powered by YES.AI.' : 'Demo mode';
+    setAppState('loading');
+    document.getElementById('loginModeNote').textContent = 'Secure client access powered by YES.AI.';
     try{
       if(!SUPABASE_MODE){
-        db=loadDemoDB(); if(!db.clients.length){ showAppState('login'); showAuthError('No demo data found.'); return; }
-        currentClientId=db.clients[0].id; await enterDashboard(); return;
+        db = loadDemoDB();
+        if(!db.clients.length){ setAppState('login'); showLoginMessage('No demo data found. Configure Supabase to continue.'); return; }
+        currentClientId = db.clients[0].id;
+        await enterDashboard();
+        return;
       }
-      const { data:{session}, error }=await sb.auth.getSession();
+      const { data:{session}, error } = await sb.auth.getSession();
       if(error) throw error;
-      if(!session){ showAppState('login'); return; }
-      await resolveClientForUser(session.user);
+      if(!session){ setAppState('login'); return; }
+      let { data:clientUserRow } = await sb.from('client_users').select('*').eq('auth_uid',session.user.id).maybeSingle();
+      if(!clientUserRow){
+        const provision = await sb.rpc('provision_yesai_client');
+        if(!provision.error){
+          const retry = await sb.from('client_users').select('*').eq('auth_uid',session.user.id).maybeSingle();
+          clientUserRow = retry.data;
+        }
+      }
+      if(!clientUserRow){ await sb.auth.signOut(); setAppState('login'); showLoginMessage('Your account is not connected to a client workspace yet.'); return; }
+      currentClientId = clientUserRow.client_id;
+      document.getElementById('loggedInEmail').textContent=session.user.email||'';
       await enterDashboard();
-    }catch(error){ console.error(error); showAppState('login'); showAuthError(error.message||'Unable to open your dashboard.'); }
+    }catch(error){
+      console.error('Boot failed',error);
+      setAppState('login');
+      showLoginMessage(error?.message || 'We could not open your workspace. Please try again.');
+    }
   }
 
   async function enterDashboard(){
-    showAppState('loading');
+    setAppState('loading');
     try{
+      if(!SUPABASE_MODE) document.getElementById('loggedInEmail').textContent = 'demo client';
+      const client = await DataAPI.getClient();
       await renderAll();
-      showAppState('dashboard');
-      const client=await DataAPI.getClient();
-      const needsSetup=!client.setup_status || ['needs_setup','in_progress'].includes(client.setup_status);
-      if(needsSetup || new URLSearchParams(location.search).get('onboarding')==='1') setTimeout(()=>openWizard(),80);
-    }catch(error){ console.error('Dashboard load failed',error); showAppState('login'); showAuthError(error.message||'Dashboard failed to load.'); }
+      setAppState('dashboard');
+      const forceOnboarding = new URLSearchParams(location.search).get('onboarding') === '1';
+      if(forceOnboarding || client.setup_status === 'needs_setup' || client.setup_status === 'in_progress' || !client.setup_status){
+        setTimeout(()=>openWizard(),80);
+      }
+    }catch(error){
+      console.error('Dashboard load failed',error);
+      if(SUPABASE_MODE) await sb.auth.signOut();
+      setAppState('login');
+      showLoginMessage('Your dashboard could not load safely. Please log in again.');
+    }
   }
 
   // =====================================================================
@@ -676,8 +740,8 @@
 
     const hot = leads.filter(l=>l.is_hot_lead).length;
     const booked = leads.filter(l=>l.status==='booked').length;
-    renderSetupReminders(client);
     renderClientStatus(client, sub);
+    renderSetupReminders(client);
 
     document.getElementById('overviewStats').innerHTML = `
       <div class="stat-card"><div class="stat-num">${leads.length}</div><div class="stat-label">Total Leads</div></div>
@@ -694,23 +758,23 @@
     }).join('');
 
     document.getElementById('leadsBody').innerHTML = leads.map(l=>`
-      <tr><td>${new Date(l.created_at).toLocaleDateString()}</td><td>${l.customer_name||'-'}</td><td>${l.customer_whatsapp}</td><td>${l.message_summary}</td>
-      <td><span class="pill ${l.status}">${l.status}</span></td><td>${l.is_hot_lead?'<span class="pill hot">HOT</span>':''}</td></tr>
+      <tr><td>${new Date(l.created_at).toLocaleDateString()}</td><td>${escapeHtml(l.customer_name)||'-'}</td><td>${escapeHtml(l.customer_whatsapp)}</td><td>${escapeHtml(l.message_summary)}</td>
+      <td><span class="pill ${escapeHtml(l.status)}">${escapeHtml(l.status)}</span></td><td>${l.is_hot_lead?'<span class="pill hot">HOT</span>':''}</td></tr>
     `).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--ink-muted);">No leads yet.</td></tr>`;
 
     document.getElementById('apptBody').innerHTML = appts.map(a=>`
-      <tr><td>${a.service}</td><td>${new Date(a.appointment_time).toLocaleString()}</td><td><span class="pill active">${a.status}</span></td></tr>
+      <tr><td>${escapeHtml(a.service)}</td><td>${new Date(a.appointment_time).toLocaleString()}</td><td><span class="pill active">${escapeHtml(a.status)}</span></td></tr>
     `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--ink-muted);">No appointments yet.</td></tr>`;
 
-    document.getElementById('s_services').value = asArray(config.services).map(s=>`${s.name}, ${s.price}`).join('\n');
+    document.getElementById('s_services').value = normalizeArray(config.services).map(s=>`${s.name}, ${s.price}`).join('\n');
     document.getElementById('s_hours').value = client.opening_hours || '';
     document.getElementById('s_location').value = client.location || '';
     document.getElementById('s_tone').value = config.tone_of_voice || 'Friendly';
     document.getElementById('s_language').value = client.language || 'en';
 
-    document.getElementById('k_faqs').value = asArray(config.faqs).map(f=>`${f.question} ? ${f.answer}`).join('\n');
+    document.getElementById('k_faqs').value = normalizeArray(config.faqs).map(f=>`${f.question} ? ${f.answer}`).join('\n');
     document.getElementById('k_description').value = config.business_description || '';
-    document.getElementById('k_offers').value = asArray(config.offers).map(o=>`${o.name}, ${o.description||''}, ${o.price||0}`).join('\n');
+    document.getElementById('k_offers').value = normalizeArray(config.offers).map(o=>`${o.name}, ${o.description||''}, ${o.price||0}`).join('\n');
 
     renderIntegrationsTab(client);
 
@@ -725,14 +789,29 @@
   }
 
   function renderClientStatus(client, sub){
-    const setupDone=['trial','complete','completed','live'].includes(client.setup_status);
-    const paused=client.bot_status==='paused' || ['past_due','cancelled','failed'].includes(sub.status);
-    const connected=!!client.whatsapp_connected;
-    let title='Finish setting up YES.AI', badge='SETUP NEEDED', subtitle='Complete the setup wizard to activate your AI employee.';
-    if(paused){ title='YES.AI is Paused'; badge='PAUSED'; subtitle='Review your subscription or bot settings to resume service.'; }
-    else if(setupDone && !connected){ title='Connect WhatsApp'; badge='CONNECTION ISSUE'; subtitle='Your setup is saved. Connect WhatsApp to start replying to customers.'; }
-    else if(setupDone && connected){ title='YES.AI is Live'; badge='LIVE'; subtitle='Your AI employee is ready to reply, qualify leads and book appointments.'; }
-    document.getElementById('clientStatusHero').innerHTML=`<section class="status-hero"><div class="status-top"><div><h2>${title}</h2><p style="margin-top:6px;color:rgba(255,255,255,.78);font-size:13px;max-width:560px">${subtitle}</p></div><span class="status-badge">${badge}</span></div><div class="status-grid"><div class="status-mini">AI replies<strong>${setupDone&&connected&&!paused?'Active':'Not active'}</strong></div><div class="status-mini">Lead tracking<strong>${setupDone?'Ready':'Setup needed'}</strong></div><div class="status-mini">Appointments<strong>${client.calendar_connected?'Connected':'Available'}</strong></div><div class="status-mini">Last checked<strong>Just now</strong></div></div><div class="status-actions"><button class="btn btn-primary" type="button" onclick="openWizard()">View Setup</button><button class="btn btn-ghost" type="button" onclick="document.querySelector('[data-tab=integrations]').click()">Test Connections</button></div></section>`;
+    const setupDone = ['trial','complete','live'].includes(client.setup_status);
+    const botOn = client.bot_status === 'on';
+    const subscriptionProblem = ['past_due','cancelled','failed'].includes(sub.status);
+    const connectionProblem = botOn && !client.whatsapp_connected;
+    let state='SETUP NEEDED', title='Finish setting up YES.AI', copy='Complete the setup wizard to activate your AI employee.';
+    if(subscriptionProblem){ state='PAUSED'; title='Your YES.AI service is paused'; copy='Review your billing details to restore your AI employee.'; }
+    else if(connectionProblem){ state='CONNECTION ISSUE'; title='Reconnect your WhatsApp'; copy='Your AI is configured, but WhatsApp needs attention.'; }
+    else if(setupDone && botOn && client.whatsapp_connected){ state='LIVE'; title='YES.AI is live'; copy='Your AI employee is ready to reply, qualify leads and support bookings.'; }
+    const live = state==='LIVE';
+    document.getElementById('clientStatusHero').innerHTML=`
+      <section class="status-hero">
+        <div class="status-top"><div><h2 class="status-title">${title}</h2><p class="status-copy">${copy}</p></div><span class="status-badge">${state}</span></div>
+        <div class="status-grid">
+          <div class="status-item"><small>AI replies</small><strong>${live?'Active':'Not active'}</strong></div>
+          <div class="status-item"><small>Lead tracking</small><strong>${setupDone?'Ready':'Setup needed'}</strong></div>
+          <div class="status-item"><small>Appointments</small><strong>${client.calendar_connected?'Connected':'Available'}</strong></div>
+          <div class="status-item"><small>Last checked</small><strong>Just now</strong></div>
+        </div>
+        <div class="status-actions">
+          <button type="button" class="btn btn-light" onclick="openWizard()">View Setup</button>
+          <button type="button" class="btn btn-soft" onclick="document.querySelector('[data-tab=integrations]').click()">Test Connections</button>
+        </div>
+      </section>`;
   }
 
   function renderIntegrationsTab(client){
@@ -793,7 +872,11 @@
     const leads = window.__latestLeads || [];
     const rows = [['Date','Name','WhatsApp','Summary','Status','Hot']];
     leads.forEach(l=>rows.push([new Date(l.created_at).toLocaleDateString(), l.customer_name, l.customer_whatsapp, l.message_summary, l.status, l.is_hot_lead?'Yes':'No']));
-    const csv = rows.map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    // Prefix a leading apostrophe on any cell starting with =, +, -, or @ so
+    // spreadsheet apps (Excel/Sheets) treat it as text, not a formula —
+    // customer_name/message_summary come from WhatsApp and are untrusted.
+    const csvSafe = v => { const s = (v??'').toString(); return /^[=+\-@]/.test(s) ? `'${s}` : s; };
+    const csv = rows.map(r=>r.map(v=>`"${csvSafe(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], {type:'text/csv'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'my_leads_export.csv'; a.click();
@@ -912,10 +995,11 @@
   }
 
   async function openWizard(){
-    if(!currentClientId){ showAuthError('Please log in again.'); return; }
     const overlay=document.getElementById('wizardOverlay');
+    if(!overlay) return;
     overlay.classList.remove('hidden');
-    document.body.classList.add('wizard-open');
+    document.body.style.overflow='hidden';
+    try{
     const client = await DataAPI.getClient();
     const config = await DataAPI.getBotConfig();
 
@@ -931,14 +1015,14 @@
     setWebsiteChoice(!!client.has_website || !!client.website_url);
     buildHoursGrid(client.business_hours_json || null);
 
-    document.getElementById('w_services').value = asArray(config.services).map(item=>`${item.name}, ${item.price||0}`).join('\n');
-    document.getElementById('w_offers').value = asArray(config.offers).map(item=>`${item.name}, ${item.description||''}, ${item.price||0}`).join('\n');
+    document.getElementById('w_services').value = normalizeArray(config.services).map(item=>`${item.name}, ${item.price||0}`).join('\n');
+    document.getElementById('w_offers').value = normalizeArray(config.offers).map(item=>`${item.name}, ${item.description||''}, ${item.price||0}`).join('\n');
     document.getElementById('w_description').value = config.business_description || '';
-    document.getElementById('w_faqs').value = asArray(config.faqs).map(item=>`${item.question} ? ${item.answer}`).join('\n');
+    document.getElementById('w_faqs').value = normalizeArray(config.faqs).map(item=>`${item.question} ? ${item.answer}`).join('\n');
     document.getElementById('w_tone').value = config.tone_of_voice || 'Friendly';
     document.getElementById('w_language').value = client.language || 'en';
 
-    const questions = asArray(config.qualification_questions);
+    const questions = normalizeArray(config.qualification_questions);
     document.getElementById('w_q1').value = questions[0] || 'What service or product do you need?';
     document.getElementById('w_q2').value = questions[1] || 'When would you like to buy or book?';
     document.getElementById('w_q3').value = questions[2] || 'What is your budget range?';
@@ -949,7 +1033,6 @@
     wizardIntegrations.whatsapp = !!client.whatsapp_connected;
     refreshIntegrationUI();
     wizardStep = Math.min(Math.max(Number(client.onboarding_step)||1,1),TOTAL_STEPS);
-    overlay.classList.remove('hidden');
     showWizardStep(wizardStep);
     setAutosaveStatus('All changes saved','saved');
 
@@ -957,12 +1040,18 @@
       el.oninput = scheduleWizardSave;
       el.onchange = scheduleWizardSave;
     });
+    }catch(error){
+      console.error('Wizard open failed',error);
+      overlay.classList.add('hidden');
+      document.body.style.overflow='';
+      alert('We could not open Setup Wizard. Please refresh and try again.');
+    }
   }
 
   async function closeWizard(){
     await saveWizardProgress(undefined, wizardStep);
     document.getElementById('wizardOverlay').classList.add('hidden');
-    document.body.classList.remove('wizard-open');
+    document.body.style.overflow='';
     await renderAll();
   }
 
@@ -1083,7 +1172,7 @@
     await saveWizardProgress('trial', TOTAL_STEPS);
     await DataAPI.updateClient({ bot_status:'on', setup_status:'trial', onboarding_completed_at:new Date().toISOString() });
     document.getElementById('wizardOverlay').classList.add('hidden');
-    document.body.classList.remove('wizard-open');
+    document.body.style.overflow='';
     alert('🚀 YES.AI is ready! Your 14-day trial has started.');
     await renderAll();
   }
@@ -1099,7 +1188,7 @@
     box.innerHTML = `
       <div class="reminder-banner">
         <strong>⚠️ A few things still need your attention</strong>
-        ${missing.map(m=>`<div>• ${m.label} — <a onclick="openWizard()">finish in Setup Wizard</a></div>`).join('')}
+        ${missing.map(m=>`<div>• ${m.label} — <a role="button" tabindex="0" onclick="openWizard();return false;">finish in Setup Wizard</a></div>`).join('')}
       </div>`;
   }
 
