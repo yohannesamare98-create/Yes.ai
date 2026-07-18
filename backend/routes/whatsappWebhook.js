@@ -9,6 +9,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import { getClientByWhatsappNumber, handleIncomingMessage } from '../lib/botEngine.js';
+import { sendWhatsappMessage } from '../lib/whatsappClient.js';
 import { supabase } from '../lib/supabaseClient.js';
 import { appendLeadToSheet } from '../lib/googleSheets.js';
 import { sendHotLeadAlert } from '../lib/notifications.js';
@@ -95,14 +96,22 @@ router.post('/webhook', verifyMetaSignature, async (req, res) => {
     const message = change?.messages?.[0];
     if (!message) return; // status update / non-message event, ignore
 
-    const businessNumber = change.metadata.display_phone_number; // the client's number
+    // MILESTONE 6B: prefer Meta's stable phone_number_id; display_phone_number
+    // is kept as a fallback identifier for clients that haven't been
+    // migrated to phone_number_id yet (see getClientByWhatsappNumber()).
+    const businessPhoneNumberId = change.metadata?.phone_number_id || null;
+    const businessDisplayNumber = change.metadata?.display_phone_number || null;
     const externalMessageId = message.id || null;
     const customerNumber = message.from;
+    const messageType = message.type || 'text'; // 'text', 'image', 'audio', 'video', 'document', 'location', 'sticker', etc.
 
     // Meta may retry the same webhook. Ignore it before calling OpenAI so the
     // customer never receives a duplicate answer.
     if (externalMessageId) {
-      const clientResult = await getClientByWhatsappNumber(businessNumber);
+      const clientResult = await getClientByWhatsappNumber({
+        phoneNumberId: businessPhoneNumberId,
+        displayNumber: businessDisplayNumber
+      });
       const clientId = clientResult?.client?.id;
       if (clientId) {
         const { data: existing, error: duplicateCheckError } = await supabase
@@ -120,9 +129,12 @@ router.post('/webhook', verifyMetaSignature, async (req, res) => {
       }
     }
     const customerName = change.contacts?.[0]?.profile?.name;
-    const text = message.text?.body || '';
+    // Only text messages have a `.text.body` — unsupported media types are
+    // handled inside handleIncomingMessage() via the messageType flag
+    // rather than being sent to the AI as an empty string.
+    const text = messageType === 'text' ? (message.text?.body || '') : `[${messageType} message]`;
 
-    const cacheKey = `${businessNumber}:${customerNumber}`;
+    const cacheKey = `${businessPhoneNumberId || businessDisplayNumber}:${customerNumber}`;
     const history = conversationCache.get(cacheKey) || [];
     history.push({ role: 'user', content: text });
 
@@ -132,14 +144,16 @@ router.post('/webhook', verifyMetaSignature, async (req, res) => {
     // throwing, so a single AI or DB hiccup can't silently drop this
     // customer's message with no response at all.
     const { reply, client, lead, isHot, skipped } = await handleIncomingMessage({
-      businessWhatsappNumber: businessNumber,
+      businessPhoneNumberId,
+      businessDisplayNumber,
       customerWhatsappNumber: customerNumber,
       customerName,
       conversationHistory: history,
-      externalMessageId
+      externalMessageId,
+      messageType
     });
 
-    if (skipped) return; // bot turned off for this client
+    if (skipped) return; // bot turned off, or a human has taken over this conversation
 
     history.push({ role: 'assistant', content: reply });
     conversationCache.set(cacheKey, history);
@@ -148,7 +162,11 @@ router.post('/webhook', verifyMetaSignature, async (req, res) => {
     // its own try/catch, so a failure further down (Sheets, hot-lead alert)
     // can never prevent the customer from getting an answer.
     try {
-      await sendWhatsappReply(businessNumber, customerNumber, reply);
+      await sendWhatsappMessage({
+        phoneNumberId: client?.whatsapp_phone_number_id || businessPhoneNumberId,
+        to: customerNumber,
+        body: reply
+      });
     } catch (err) {
       console.error('[whatsappWebhook] failed to send WhatsApp reply:', err.message);
     }
@@ -172,39 +190,5 @@ router.post('/webhook', verifyMetaSignature, async (req, res) => {
     console.error('[whatsappWebhook] unexpected error handling message:', err);
   }
 });
-
-/**
- * Sends a text reply via the WhatsApp Cloud API.
- * Requires WHATSAPP_TOKEN + WHATSAPP_PHONE_NUMBER_ID (per client, if each
- * client has their own Meta app/number, or reuse one shared number ID if
- * you're routing through a single Meta Business number for all clients).
- */
-async function sendWhatsappReply(businessNumber, to, body) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = process.env.WHATSAPP_TOKEN;
-
-  if (!phoneNumberId || !accessToken) {
-    console.warn('[whatsappWebhook] WHATSAPP_TOKEN or WHATSAPP_PHONE_NUMBER_ID not set — skipping real send (demo mode).');
-    return;
-  }
-
-  const response = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to,
-      text: { body }
-    })
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text().catch(() => '');
-    throw new Error(`WhatsApp API responded ${response.status}: ${errorBody}`);
-  }
-}
 
 export default router;

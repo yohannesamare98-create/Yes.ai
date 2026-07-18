@@ -101,19 +101,40 @@ const RESPONSE_SCHEMA = {
 };
 
 /**
- * Look up which client owns a given WhatsApp Business number,
- * and pull their bot configuration (services, FAQs, questions, rules).
- * This is the client-isolation boundary for live WhatsApp traffic —
- * every downstream read/write is scoped to this one client.id.
+ * Look up which client owns a given WhatsApp Business number, and pull
+ * their bot configuration (services, FAQs, questions, rules). This is the
+ * client-isolation boundary for live WhatsApp traffic — every downstream
+ * read/write is scoped to this one client.id.
+ *
+ * MILESTONE 6B: prefers Meta's stable `phone_number_id` (never changes
+ * for a given number) over the human-readable `display_phone_number`
+ * (formatting like spaces/+/leading zeros is not guaranteed stable).
+ * Falls back to displayNumber for clients that haven't had
+ * whatsapp_phone_number_id set yet, so existing setups keep working
+ * unchanged.
  */
-export async function getClientByWhatsappNumber(whatsappNumber) {
-  const { data: client, error: clientError } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('whatsapp_number', whatsappNumber)
-    .single();
+export async function getClientByWhatsappNumber({ phoneNumberId, displayNumber }) {
+  let client = null;
 
-  if (clientError || !client) return null;
+  if (phoneNumberId) {
+    const { data } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('whatsapp_phone_number_id', phoneNumberId)
+      .maybeSingle();
+    client = data || null;
+  }
+
+  if (!client && displayNumber) {
+    const { data } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('whatsapp_number', displayNumber)
+      .maybeSingle();
+    client = data || null;
+  }
+
+  if (!client) return null;
 
   const { data: config } = await supabase
     .from('bot_config')
@@ -396,26 +417,66 @@ async function loadConversationMemory({ clientId, customerWhatsappNumber, fallba
   }
 }
 
+const UNSUPPORTED_MEDIA_REPLY =
+  "Thanks for sending that — right now I can only read text messages. Someone from our team will follow up with you shortly about this.";
+
+/**
+ * Builds the same structured shape callIntelligenceEngine() would return,
+ * but without calling OpenAI at all — used when the inbound message isn't
+ * text (image/audio/video/document/location/sticker/etc). Per the spec,
+ * unsupported media gets a safe canned reply and an automatic human
+ * handoff rather than being sent to the model or silently dropped.
+ */
+export function buildUnsupportedMediaResponse(priorState) {
+  return {
+    reply: UNSUPPORTED_MEDIA_REPLY,
+    intent: 'support',
+    service_or_product: null,
+    lead_temperature: priorState?.lead_temperature || 'cold',
+    qualification_score: priorState?.qualification_score || 0,
+    collected_customer_data: priorState?.collected_customer_data || {
+      service_needed: null, budget: null, urgency: null,
+      location: null, preferred_date: null, buying_readiness: null
+    },
+    appointment_requested: false,
+    human_handoff: true,
+    conversation_summary: priorState?.conversation_summary || 'Customer sent a non-text message that needs human review.'
+  };
+}
+
 /**
  * Main entry point — called once per inbound WhatsApp message.
+ *
+ * businessPhoneNumberId / businessDisplayNumber: identify which client
+ * owns this number (MILESTONE 6B — phone_number_id preferred, display
+ * number as fallback; see getClientByWhatsappNumber()).
+ * messageType: Meta's message.type ('text', 'image', 'audio', 'video',
+ * 'document', 'location', 'sticker', 'contacts', 'interactive', etc.).
+ * Anything other than 'text' skips the AI entirely (see
+ * buildUnsupportedMediaResponse above).
  * conversationHistory (optional): array of { role: 'user'|'assistant', content }
  * used only as a fallback if Supabase-backed memory can't be loaded.
  */
 export async function handleIncomingMessage({
-  businessWhatsappNumber,
+  businessPhoneNumberId = null,
+  businessDisplayNumber = null,
   customerWhatsappNumber,
   customerName,
   conversationHistory = [],
-  externalMessageId = null
+  externalMessageId = null,
+  messageType = 'text'
 }) {
-  const result = await getClientByWhatsappNumber(businessWhatsappNumber);
+  const result = await getClientByWhatsappNumber({
+    phoneNumberId: businessPhoneNumberId,
+    displayNumber: businessDisplayNumber
+  });
   if (!result) {
-    throw new Error(`No client found for WhatsApp number ${businessWhatsappNumber}`);
+    throw new Error(`No client found for WhatsApp number (phone_number_id=${businessPhoneNumberId}, display=${businessDisplayNumber})`);
   }
   const { client, config } = result;
 
   if (client.bot_status !== 'on') {
-    return { reply: null, skipped: true, reason: `Bot status is '${client.bot_status}'` };
+    return { reply: null, skipped: true, reason: `Bot status is '${client.bot_status}'`, client };
   }
 
   const latestMessage = conversationHistory.at(-1)?.content || '';
@@ -432,23 +493,59 @@ export async function handleIncomingMessage({
     lead_temperature: priorLead.lead_temperature,
     qualification_score: priorLead.qualification_score
   } : null;
+  const nextUnreadCount = (priorLead?.unread_count || 0) + 1;
 
-  const systemPrompt = buildSystemPrompt(client, config, priorState);
+  // ---- Human takeover: AI is paused for this conversation ----
+  // A human agent is handling this lead from the Conversations tab. Save
+  // the incoming message and bump the unread badge, but do NOT call
+  // OpenAI or auto-reply — the business owner will reply manually.
+  if (priorLead?.mode === 'human') {
+    let lead = priorLead;
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .update({
+          unread_count: nextUnreadCount,
+          last_message_at: new Date().toISOString(),
+          last_message_preview: latestMessage.slice(0, 200),
+          customer_name: customerName || priorLead.customer_name
+        })
+        .eq('id', priorLead.id)
+        .select()
+        .single();
+      if (error) throw error;
+      lead = data;
 
-  const engineResult = await callIntelligenceEngine({
-    client, config,
-    messages: [{ role: 'system', content: systemPrompt }, ...history],
-    priorState
-  });
+      const { error: msgError } = await supabase.from('messages').insert({
+        client_id: client.id, lead_id: lead.id, direction: 'inbound',
+        body: messageType === 'text' ? latestMessage : `[${messageType} message]`,
+        external_message_id: externalMessageId
+      });
+      if (msgError) throw msgError;
+    } catch (err) {
+      console.error(`[botEngine] Failed to save inbound message during human-mode pause for client ${client.id}:`, err.message);
+    }
+    return { reply: null, skipped: true, reason: 'human_active_mode', client, lead };
+  }
+
+  // ---- Unsupported media: skip the AI, give a safe canned reply ----
+  const isTextMessage = messageType === 'text';
+  const engineResult = isTextMessage
+    ? await callIntelligenceEngine({
+        client, config,
+        messages: [{ role: 'system', content: buildSystemPrompt(client, config, priorState) }, ...history],
+        priorState
+      })
+    : { ok: true, demo: false, data: buildUnsupportedMediaResponse(priorState) };
 
   const structured = engineResult.data;
 
   // Safety-net overrides — rule-based, on top of the model's own judgment.
-  if (keywordForcesHandoff(latestMessage, config?.human_handoff_keywords)) {
+  if (isTextMessage && keywordForcesHandoff(latestMessage, config?.human_handoff_keywords)) {
     structured.human_handoff = true;
   }
   const fullConversationText = history.map(m => m.content).join(' ') + ' ' + structured.reply;
-  const keywordHot = keywordSuggestsHot(fullConversationText, config?.hot_lead_rules);
+  const keywordHot = isTextMessage && keywordSuggestsHot(fullConversationText, config?.hot_lead_rules);
   if (keywordHot && structured.lead_temperature !== 'hot') {
     structured.lead_temperature = 'hot';
   }
@@ -480,7 +577,11 @@ export async function handleIncomingMessage({
         appointment_requested: structured.appointment_requested,
         human_handoff: structured.human_handoff,
         conversation_summary: structured.conversation_summary,
-        status: priorLead?.status || 'new'
+        status: priorLead?.status || 'new',
+        mode: priorLead?.mode || 'ai',
+        unread_count: nextUnreadCount,
+        last_message_at: new Date().toISOString(),
+        last_message_preview: structured.reply?.slice(0, 200) || latestMessage.slice(0, 200)
       }, { onConflict: 'customer_whatsapp,client_id' })
       .select()
       .single();
@@ -488,8 +589,12 @@ export async function handleIncomingMessage({
     lead = data;
 
     const { error: messagesError } = await supabase.from('messages').insert([
-      { client_id: client.id, lead_id: lead?.id, direction: 'inbound', body: latestMessage, external_message_id: externalMessageId },
-      { client_id: client.id, lead_id: lead?.id, direction: 'outbound', body: structured.reply, metadata: structured }
+      {
+        client_id: client.id, lead_id: lead?.id, direction: 'inbound',
+        body: isTextMessage ? latestMessage : `[${messageType} message]`,
+        external_message_id: externalMessageId
+      },
+      { client_id: client.id, lead_id: lead?.id, direction: 'outbound', body: structured.reply, metadata: structured, sent_by: 'ai' }
     ]);
     if (messagesError) throw messagesError;
   } catch (err) {
