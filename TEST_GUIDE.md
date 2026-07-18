@@ -1,10 +1,116 @@
-# YES.AI — Test Guide (Milestone 5A)
+# YES.AI — Test Guide
 
-Manual test script for the dashboard merge and security hardening in this
-release. No backend keys are required for most of these — the project's
-demo-mode fallback means everything below can be tested locally first.
+## Milestone 6A — OpenAI Intelligence Engine
+
+### 1. Run the migration first
+
+In the Supabase SQL Editor, run
+`database/migrations/20260718_intelligence_engine.sql`. It's idempotent —
+safe to run more than once.
+
+### 2. Unit tests — pure logic (no API key or Supabase needed)
+
+```bash
+cd backend
+npm install
+node -e "
+import('./lib/botEngine.js').then(async m => {
+  const assert = await import('node:assert/strict');
+  assert.default.equal(m.keywordForcesHandoff('I want a refund', ['refund']), true);
+  assert.default.equal(m.keywordForcesHandoff('price please', ['refund']), false);
+  assert.default.equal(m.keywordSuggestsHot('need this urgent today', {keywords:['urgent']}), true);
+  const merged = m.mergeCollectedData({service_needed:'Haircut', budget:null}, {service_needed:null, budget:'AED 200'});
+  assert.default.equal(merged.service_needed, 'Haircut');
+  assert.default.equal(merged.budget, 'AED 200');
+  console.log('All botEngine helper tests passed.');
+});
+"
+```
+
+**Pass condition:** `All botEngine helper tests passed.` with no assertion
+errors.
+
+### 3. Backend boots cleanly, new route is mounted and auth-protected
+
+```bash
+cd backend
+node server.js &
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/health
+# Expect: 200
+
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  http://localhost:3000/api/clients/fake-id/test-ai \
+  -H "Content-Type: application/json" -d '{"message":"hi"}'
+# Expect: 401 (no Authorization header — proves the route is protected
+# by the same auth middleware as the rest of the client API)
+kill %1
+```
+
+### 4. Test AI page — manual walkthrough
+
+1. Make sure Supabase is configured (`client-dashboard/config.js`) and
+   you have at least one client + `bot_config` row with some `services`
+   and `faqs` filled in (via the dashboard's Bot Settings/Knowledge Base
+   tabs, or directly in Supabase).
+2. Log into `client-dashboard/index.html` as that client.
+3. Click **🧪 Test AI** in the top nav (new link, next to Setup Wizard).
+4. Ask something answerable from that client's real FAQs/services —
+   confirm the reply uses the real price/answer, not a generic one.
+5. Ask something NOT in their services/FAQs/policies (e.g. "do you do
+   home visits?" if that's not configured) — confirm the AI does not
+   invent an answer, and either says it will check or the inspector
+   panel shows **human_handoff = true** (red banner).
+6. Say something like "I need this urgently, my budget is AED 500, can
+   we do tomorrow?" — confirm the inspector panel's **Collected customer
+   data** fills in budget/urgency/preferred_date, and **Lead
+   temperature** moves toward warm/hot.
+7. Send a follow-up message and confirm the AI does **not** re-ask a
+   question you already answered — this proves conversation memory is
+   working within the test session.
+8. Click **Reset conversation** and confirm the chat and inspector both
+   clear, and the next message starts a fresh (not carried-over)
+   conversation.
+9. Check the browser's Network tab: no requests should go to `/leads` or
+   create anything visible back in the Leads tab of the dashboard after
+   a test conversation — test mode should never pollute real data.
+
+**Pass condition:** all of the above behave as described. If
+`OPENAI_API_KEY` isn't set on the backend yet, you'll see a blue "Demo
+mode" banner and a clearly-labeled simulated reply instead of a real AI
+response — that's expected demo-mode behavior, not a bug.
+
+### 5. Real end-to-end OpenAI call (requires a real API key + Supabase)
+
+This can't be verified from a sandboxed environment without network
+access to `api.openai.com` — verify it once deployed:
+
+1. Set a real `OPENAI_API_KEY` in Railway.
+2. Repeat the Test AI walkthrough above.
+3. Confirm `demo_mode: false` in the response and that `reply` is a real,
+   natural-sounding AI-generated message referencing your actual
+   configured services/FAQs.
+4. Deliberately send a message with no relevant FAQ configured and
+   confirm the AI does not fabricate details — this is the core
+   anti-hallucination behavior the milestone is built around.
+
+### 6. Live WhatsApp regression check
+
+Confirm `whatsappWebhook.js` didn't need any code changes and still
+works: send a real WhatsApp message to a connected number (or replay a
+test payload through `POST /webhook` with a valid signature per the
+Milestone 5A section below), and confirm:
+- A `leads` row is created/updated with the new fields populated
+  (`intent`, `lead_temperature`, `qualification_score`,
+  `collected_customer_data`, etc.)
+- The `messages` table has both the inbound and outbound rows, with the
+  outbound row's `metadata` column containing the full structured JSON.
+- A second message from the same customer doesn't repeat questions
+  already answered in the first.
 
 ---
+
+# Milestone 5A — Dashboard Merge & Security Hardening
+_Previous session — still valid, unchanged by 6A_
 
 ## 1. Client dashboard merge
 

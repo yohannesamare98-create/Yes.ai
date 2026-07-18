@@ -13,6 +13,7 @@ Leave any group blank to keep that integration in demo mode.
 | `WHATSAPP_APP_SECRET` | Verifying that incoming webhook POSTs really came from Meta (`X-Hub-Signature-256`) | Meta Business App → Settings → Basic → App Secret |
 | `ALLOWED_ORIGINS` | Restricts which website origins can call `/api` from a browser | Comma-separated list, e.g. `https://app.yourdomain.com,https://admin.yourdomain.com`. Leave blank in demo mode. |
 | `OPENAI_API_KEY` | The AI replies | https://platform.openai.com/api-keys |
+| `OPENAI_MODEL` | (Optional) Overrides the model used by the intelligence engine | Defaults to `gpt-4o-mini` if unset — only set this if you want a different model |
 | `SUPABASE_URL` | Database connection | Supabase project → Settings → API |
 | `SUPABASE_KEY` | (public/anon key, if used client-side later) | Supabase project → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Database connection (backend only — full access, keep secret) | Supabase project → Settings → API |

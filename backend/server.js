@@ -12,6 +12,7 @@ import rateLimit from 'express-rate-limit';
 import whatsappWebhook from './routes/whatsappWebhook.js';
 import stripeRoutes from './routes/stripeRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
+import testAiRoutes from './routes/testAiRoutes.js';
 import { supabase } from './lib/supabaseClient.js';
  
 const app = express();
@@ -54,6 +55,7 @@ app.use(express.json({
   verify: (req, res, buf) => { req.rawBody = buf; }
 }));
 app.use('/api', clientRoutes);
+app.use('/api', testAiRoutes);
 app.use('/', whatsappWebhook); // exposes GET/POST /webhook for Meta
  
 app.get('/', (req, res) => {

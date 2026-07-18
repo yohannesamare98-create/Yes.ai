@@ -1,7 +1,124 @@
 # YES.AI — Changelog
 
-## Milestone 5A — Dashboard Merge, Security Audit & Hardening
+## Milestone 6A — OpenAI Intelligence Engine
 _This session_
+
+### Added
+- **Structured JSON intelligence layer.** `backend/lib/botEngine.js` was
+  rewritten so every AI turn returns strict, schema-enforced JSON (via
+  OpenAI's `json_schema` structured output mode) containing: `reply`,
+  `intent`, `service_or_product`, `lead_temperature`, `qualification_score`,
+  `collected_customer_data` (service_needed, budget, urgency, location,
+  preferred_date, buying_readiness), `appointment_requested`,
+  `human_handoff`, and `conversation_summary`. Nothing was reconnected —
+  this reuses the existing `OPENAI_API_KEY` and the existing OpenAI SDK
+  client exactly as before.
+- **Supabase-backed conversation memory.** The bot now loads a lead's
+  prior profile (`collected_customer_data`, `conversation_summary`,
+  `lead_temperature`, `qualification_score`) and recent message history
+  from Supabase before calling OpenAI, so it remembers previous messages
+  and doesn't re-ask questions it already has answers to — and survives
+  server restarts, unlike the old in-memory-only cache (which is kept as
+  a fallback for demo mode / when Supabase isn't reachable).
+- **Turn-over-turn lead profile merging.** `collected_customer_data` only
+  gets overwritten for fields the AI actually extracted new information
+  for this turn — earlier answers are never silently dropped.
+- **Client isolation, unchanged in spirit, extended in scope.** Live
+  WhatsApp traffic is still scoped by `whatsapp_number` (`
+  getClientByWhatsappNumber`); the new Test AI path is scoped by
+  `client_id` after the existing `requireAuth` + `requireClientAccess`
+  middleware confirms the caller owns that client. Every Supabase read/
+  write anywhere in the engine is filtered by `client_id` — one client's
+  business data, leads, and conversation history are never visible to
+  another's prompt or response.
+- **Fallback & human-handoff rules.**
+  - If the OpenAI call itself fails, the engine returns a safe fallback
+    reply (`bot_config.fallback_message`, or a sane built-in default) and
+    forces `human_handoff = true` rather than leaving the customer
+    without a response.
+  - The system prompt explicitly instructs the model to never invent
+    information and to set `human_handoff = true` instead of guessing
+    whenever it lacks verified information or the topic is sensitive
+    (legal, medical, complaints, refund disputes).
+  - A rule-based safety net (`bot_config.human_handoff_keywords`) forces
+    `human_handoff = true` if the customer's message contains any
+    configured keyword, regardless of what the model itself decided —
+    defense in depth on top of the model's own judgment.
+  - The existing `hot_lead_rules.keywords` mechanism is preserved and now
+    combined with the model's own `lead_temperature` call: a keyword hit
+    can only push a lead's temperature up to `hot`, never override the
+    model down.
+- **Test AI endpoint + page**, so a client can test their bot's business
+  knowledge before connecting live WhatsApp:
+  - `POST /api/clients/:id/test-ai` (new `backend/routes/testAiRoutes.js`)
+    — authenticated via the existing `requireAuth`/`resolveYesAiRole`/
+    `requireClientAccess` middleware (no new auth system). Runs the exact
+    same intelligence engine as real WhatsApp messages
+    (`runTestMessage()` calls the same prompt-building and OpenAI-calling
+    code as `handleIncomingMessage()`). Deliberately writes nothing to
+    Supabase — the caller sends the full conversation history each
+    request, so repeated testing never creates fake leads or messages in
+    the real dashboards.
+  - `client-dashboard/test-ai.html` — a new page (not a redesign of the
+    existing dashboard) with a chat interface plus a live "what the AI
+    understood" inspector panel showing intent, service/product,
+    lead temperature, qualification score, collected data, appointment
+    flag, human-handoff flag, and the rolling conversation summary for
+    every reply. Reachable via a small new "🧪 Test AI" link added to the
+    dashboard's top nav — no existing tab, wizard step, or feature was
+    touched to add it.
+- New `bot_config` fields so the AI has real business knowledge to draw
+  on, exposed through the existing client-update API
+  (`clientRoutes.js`'s `BOT_CONFIG_UPDATE_FIELDS`, no new endpoint
+  needed): `policies`, `fallback_message`, `human_handoff_keywords`.
+- `database/migrations/20260718_intelligence_engine.sql` — adds the above
+  `bot_config` fields plus `leads.intent`, `leads.service_or_product`,
+  `leads.lead_temperature`, `leads.qualification_score`,
+  `leads.collected_customer_data`, `leads.appointment_requested`,
+  `leads.human_handoff`, `leads.conversation_summary`, and
+  `messages.metadata` (stores the full structured JSON per AI turn for
+  debugging/audit). Safe to re-run — every change is `IF NOT EXISTS`.
+
+### Tested
+- `backend/lib/botEngine.js`'s pure helper functions
+  (`keywordForcesHandoff`, `keywordSuggestsHot`, `mergeCollectedData`) are
+  now exported and covered by a real unit test importing the actual
+  module (see `TEST_GUIDE.md`) — all passing.
+- Full backend boot-and-route smoke test performed this session (health
+  check, auth-required 401 on the new test-ai route). A live end-to-end
+  OpenAI call could not be executed from this environment (no network
+  path to api.openai.com here) — see `TEST_GUIDE.md` for exactly how to
+  verify a real call once this is deployed with a real `OPENAI_API_KEY`.
+
+### Preserved
+- `handleIncomingMessage()`'s return shape (`reply`, `client`, `lead`,
+  `isHot`, `skipped`) is unchanged, so `whatsappWebhook.js` required
+  **zero edits** — the entire WhatsApp send/receive flow, duplicate-
+  message handling, Google Sheets append, and hot-lead alert logic all
+  keep working exactly as before.
+- No visual redesign of `client-dashboard/index.html` or
+  `admin-dashboard/index.html` — the only dashboard change is one small
+  additive nav link to the new Test AI page.
+- All Milestone 5A security fixes (XSS escaping, CSV injection guard,
+  webhook signature verification, rate limiting, helmet, CORS) untouched.
+
+### Known gaps for future milestones
+- No dashboard UI yet for editing the new `policies`,
+  `fallback_message`, or `human_handoff_keywords` fields — they can be
+  set via the API/Supabase directly today; a Bot Settings tab addition
+  would be a natural, small follow-up (not bundled here to avoid
+  touching the existing dashboard's layout in this pass).
+- The in-memory `conversationCache` in `whatsappWebhook.js` is now
+  mostly a fallback (Supabase is the primary memory source for any lead
+  that already exists) but is still used for a brand-new lead's very
+  first message before a `leads` row exists yet — still worth moving to
+  Redis before scaling past one backend instance, as flagged in
+  Milestone 5A.
+- Multilingual dashboard UI (5B) is still not part of this release.
+
+## Milestone 5A — Dashboard Merge, Security Audit & Hardening
+_Previous session_
+
 
 ### Removed
 - `YESAI_CLIENT_DASHBOARD_V2.zip` — its contents are now merged directly
