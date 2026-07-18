@@ -13,6 +13,7 @@ import whatsappWebhook from './routes/whatsappWebhook.js';
 import stripeRoutes from './routes/stripeRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import testAiRoutes from './routes/testAiRoutes.js';
+import conversationsRoutes from './routes/conversationsRoutes.js';
 import { supabase } from './lib/supabaseClient.js';
  
 const app = express();
@@ -56,6 +57,7 @@ app.use(express.json({
 }));
 app.use('/api', clientRoutes);
 app.use('/api', testAiRoutes);
+app.use('/api', conversationsRoutes);
 app.use('/', whatsappWebhook); // exposes GET/POST /webhook for Meta
  
 app.get('/', (req, res) => {

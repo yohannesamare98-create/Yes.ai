@@ -18,7 +18,8 @@ const CLIENT_UPDATE_FIELDS = new Set([
   'business_name', 'industry', 'business_phone', 'logo_url', 'contact_email',
   'location', 'opening_hours', 'language', 'notification_number',
   'notification_email', 'google_sheet_url', 'google_calendar_id',
-  'whatsapp_connected', 'calendar_connected', 'sheets_connected', 'setup_status'
+  'whatsapp_connected', 'calendar_connected', 'sheets_connected', 'setup_status',
+  'whatsapp_phone_number_id'
 ]);
 
 const BOT_CONFIG_UPDATE_FIELDS = new Set([

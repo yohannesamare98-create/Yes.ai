@@ -84,6 +84,41 @@
   .pill.trialing{background:#eef2ff;color:var(--blue);}
   .pill.past_due{background:#fff7ed;color:var(--amber);}
   .card{background:var(--card);border:1px solid rgba(255,255,255,.82);border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:var(--shadow);backdrop-filter:blur(14px);}
+
+  /* Conversations tab (Milestone 6B) */
+  .unread-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e11d48;margin-left:5px;vertical-align:middle;}
+  .conv-layout{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start;height:min(680px,75vh);}
+  @media (max-width:860px){.conv-layout{grid-template-columns:1fr;height:auto;}}
+  .conv-list{padding:0;overflow-y:auto;height:100%;}
+  .conv-empty{padding:24px;text-align:center;color:var(--ink-muted);font-size:13px;}
+  .conv-row{display:flex;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border,rgba(93,104,160,.14));cursor:pointer;position:relative;}
+  .conv-row:hover{background:rgba(49,87,246,.04);}
+  .conv-row.selected{background:rgba(49,87,246,.08);}
+  .conv-avatar{width:38px;height:38px;border-radius:50%;background:var(--gradient);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+  .conv-row-main{flex:1;min-width:0;}
+  .conv-row-top{display:flex;justify-content:space-between;gap:8px;}
+  .conv-name{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .conv-time{font-size:11px;color:var(--ink-muted);flex-shrink:0;}
+  .conv-preview{font-size:12.5px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .conv-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+  .conv-unread-count{background:#e11d48;color:#fff;font-size:10.5px;font-weight:800;border-radius:999px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0;}
+
+  .conv-detail{display:flex;flex-direction:column;height:100%;padding:0;}
+  .conv-detail-head{padding:16px 18px;border-bottom:1px solid var(--border,rgba(93,104,160,.14));display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .conv-detail-title{font-weight:700;font-size:15px;}
+  .conv-detail-sub{font-size:12px;color:var(--ink-muted);}
+  .conv-actions{display:flex;gap:8px;}
+  .conv-actions button{font-size:12px;padding:7px 12px;}
+  .conv-messages{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:9px;}
+  .conv-msg{max-width:75%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.45;}
+  .conv-msg.inbound{align-self:flex-start;background:#fff;border:1px solid var(--border,rgba(93,104,160,.14));border-bottom-left-radius:4px;}
+  .conv-msg.outbound{align-self:flex-end;background:var(--gradient);color:#fff;border-bottom-right-radius:4px;}
+  .conv-msg-tag{font-size:10px;opacity:.75;margin-bottom:2px;display:block;text-transform:uppercase;font-weight:700;letter-spacing:.03em;}
+  .conv-reply-row{display:flex;gap:9px;padding:14px 18px;border-top:1px solid var(--border,rgba(93,104,160,.14));}
+  .conv-reply-row input{flex:1;padding:11px 13px;border:1px solid var(--border,rgba(93,104,160,.14));border-radius:10px;font-size:14px;}
+  .conv-mode-banner{margin:0 18px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;}
+  .conv-mode-banner.human{background:#fff7e6;color:var(--amber);}
+  .conv-mode-banner.handoff{background:#fff1f0;color:#e11d48;}
   .card h3{font-size:16px;margin-bottom:16px;}
   .plan-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);}
   .plan-row:last-child{border-bottom:none;}
@@ -245,6 +280,7 @@
     <div class="tab" data-tab="knowledge">Knowledge Base</div>
     <div class="tab" data-tab="integrations">Integrations</div>
     <div class="tab" data-tab="billing">Billing</div>
+    <div class="tab" data-tab="conversations">Conversations<span id="convUnreadDot" class="unread-dot hidden"></span></div>
     <div class="tab wizard-trigger" onclick="openWizard()" style="margin-left:auto;color:var(--blue);">🧭 Setup Wizard</div>
     <a class="tab" href="test-ai.html" style="color:var(--purple);text-decoration:none;">🧪 Test AI</a>
   </div>
@@ -370,6 +406,22 @@
           <thead><tr><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead>
           <tbody id="invoicesBody"><tr><td colspan="4" style="text-align:center;color:var(--ink-muted);">No invoices yet — first invoice appears after your trial ends.</td></tr></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- CONVERSATIONS (Milestone 6B) -->
+    <div class="view" id="tab-conversations">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2>Conversations</h2>
+        <button class="btn btn-ghost" onclick="loadConversations()">Refresh</button>
+      </div>
+      <div class="conv-layout">
+        <div class="conv-list card" id="convList">
+          <div class="conv-empty">Loading conversations…</div>
+        </div>
+        <div class="conv-detail card" id="convDetail">
+          <div class="conv-empty">Select a conversation to view the full history.</div>
+        </div>
       </div>
     </div>
   </main>
@@ -533,6 +585,57 @@
       const { data, error } = await sb.from('appointments').select('*').eq('client_id', currentClientId).order('appointment_time', { ascending:true });
       if(error) throw error;
       return data;
+    },
+    // ---- Conversations (Milestone 6B) ----
+    // Reads go straight through Supabase (RLS already scopes every row to
+    // this client, same as getLeads/getAppointments above). Sending a
+    // manual reply is the one action that must go through the backend
+    // API, since it needs the server-side WhatsApp access token.
+    async getConversations(){
+      if(!SUPABASE_MODE) return (db.leads||[]).filter(l=>l.client_id===currentClientId)
+        .map(l=>({ ...l, last_message_preview: l.last_message_preview || l.message_summary, mode: l.mode || 'ai' }));
+      const { data, error } = await sb.from('leads')
+        .select('id, customer_name, customer_whatsapp, last_message_preview, last_message_at, unread_count, lead_temperature, human_handoff, mode, appointment_requested, is_hot_lead, status, created_at')
+        .eq('client_id', currentClientId)
+        .order('last_message_at', { ascending:false, nullsFirst:false });
+      if(error) throw error;
+      return data;
+    },
+    async getMessages(leadId){
+      if(!SUPABASE_MODE) return []; // demo mode has no seeded message history
+      const { data, error } = await sb.from('messages')
+        .select('id, direction, body, sent_by, created_at')
+        .eq('client_id', currentClientId).eq('lead_id', leadId)
+        .order('created_at', { ascending:true });
+      if(error) throw error;
+      return data;
+    },
+    async markConversationRead(leadId){
+      if(!SUPABASE_MODE){
+        const l = (db.leads||[]).find(l=>l.id===leadId); if(l){ l.unread_count = 0; saveDemoDB(db); }
+        return;
+      }
+      await sb.from('leads').update({ unread_count: 0 }).eq('id', leadId).eq('client_id', currentClientId);
+    },
+    async setConversationMode(leadId, mode){
+      if(!SUPABASE_MODE){
+        const l = (db.leads||[]).find(l=>l.id===leadId); if(l){ l.mode = mode; saveDemoDB(db); }
+        return;
+      }
+      const { error } = await sb.from('leads').update({ mode }).eq('id', leadId).eq('client_id', currentClientId);
+      if(error) throw error;
+    },
+    async sendManualReply(leadId, message){
+      if(!SUPABASE_MODE) throw new Error('Manual replies require Supabase to be configured on this dashboard.');
+      const { data:{session} } = await sb.auth.getSession();
+      const res = await fetch(`/api/clients/${currentClientId}/conversations/${leadId}/reply`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ message })
+      });
+      const result = await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(result.error || `Request failed (${res.status})`);
+      return result;
     },
     async updateBotConfig(fields){
       if(!SUPABASE_MODE){
@@ -787,6 +890,178 @@
 
     // stash latest fetch for export/save handlers
     window.__latestLeads = leads;
+
+    // Conversations tab loads independently — a failure here shouldn't
+    // block the rest of the dashboard from rendering.
+    loadConversations().catch(err => console.error('Failed to load conversations', err));
+  }
+
+  // =====================================================================
+  // CONVERSATIONS (Milestone 6B)
+  // =====================================================================
+  let conversations = [];
+  let selectedConversationId = null;
+
+  function initials(name, whatsapp){
+    const source = (name || whatsapp || '?').trim();
+    return source.slice(0,2).toUpperCase();
+  }
+
+  function timeAgo(iso){
+    if(!iso) return '';
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.round(diffMs/60000);
+    if(mins < 1) return 'now';
+    if(mins < 60) return `${mins}m`;
+    const hrs = Math.round(mins/60);
+    if(hrs < 24) return `${hrs}h`;
+    return `${Math.round(hrs/24)}d`;
+  }
+
+  async function loadConversations(){
+    conversations = await DataAPI.getConversations();
+    renderConversationsList();
+    const totalUnread = conversations.reduce((sum,c)=>sum+(c.unread_count||0), 0);
+    document.getElementById('convUnreadDot').classList.toggle('hidden', totalUnread === 0);
+  }
+
+  function renderConversationsList(){
+    const listEl = document.getElementById('convList');
+    if(!conversations.length){
+      listEl.innerHTML = '<div class="conv-empty">No conversations yet — they\'ll appear here as soon as a customer messages your WhatsApp number.</div>';
+      return;
+    }
+    listEl.innerHTML = conversations.map(c => `
+      <div class="conv-row ${c.id===selectedConversationId?'selected':''}" onclick="openConversation('${c.id}')">
+        <div class="conv-avatar">${escapeHtml(initials(c.customer_name, c.customer_whatsapp))}</div>
+        <div class="conv-row-main">
+          <div class="conv-row-top">
+            <span class="conv-name">${escapeHtml(c.customer_name) || escapeHtml(c.customer_whatsapp)}</span>
+            <span class="conv-time">${timeAgo(c.last_message_at || c.created_at)}</span>
+          </div>
+          <div class="conv-preview">${escapeHtml(c.last_message_preview) || 'No messages yet'}</div>
+          <div class="conv-badges">
+            <span class="pill ${escapeHtml(c.lead_temperature||'cold')}">${escapeHtml((c.lead_temperature||'cold').toUpperCase())}</span>
+            ${c.human_handoff ? '<span class="pill hot">NEEDS HUMAN</span>' : ''}
+            ${c.mode==='human' ? '<span class="pill new">HUMAN MODE</span>' : ''}
+          </div>
+        </div>
+        ${c.unread_count ? `<span class="conv-unread-count">${c.unread_count>9?'9+':c.unread_count}</span>` : ''}
+      </div>
+    `).join('');
+  }
+
+  async function openConversation(leadId){
+    selectedConversationId = leadId;
+    renderConversationsList();
+    const detailEl = document.getElementById('convDetail');
+    detailEl.innerHTML = '<div class="conv-empty">Loading conversation…</div>';
+
+    const convo = conversations.find(c=>c.id===leadId);
+    if(!convo) return;
+
+    try{
+      await DataAPI.markConversationRead(leadId);
+      convo.unread_count = 0;
+      renderConversationsList();
+      const totalUnread = conversations.reduce((sum,c)=>sum+(c.unread_count||0), 0);
+      document.getElementById('convUnreadDot').classList.toggle('hidden', totalUnread === 0);
+
+      const messages = await DataAPI.getMessages(leadId);
+      renderConversationDetail(convo, messages);
+    }catch(err){
+      console.error('Failed to open conversation', err);
+      detailEl.innerHTML = '<div class="conv-empty">Could not load this conversation. Please try again.</div>';
+    }
+  }
+
+  function renderConversationDetail(convo, messages){
+    const detailEl = document.getElementById('convDetail');
+    const modeIsHuman = convo.mode === 'human';
+
+    detailEl.innerHTML = `
+      <div class="conv-detail-head">
+        <div>
+          <div class="conv-detail-title">${escapeHtml(convo.customer_name) || escapeHtml(convo.customer_whatsapp)}</div>
+          <div class="conv-detail-sub">${escapeHtml(convo.customer_whatsapp)}</div>
+        </div>
+        <div class="conv-actions">
+          ${modeIsHuman
+            ? `<button class="btn btn-soft" onclick="returnToAI('${convo.id}')">↩ Return to AI</button>`
+            : `<button class="btn btn-soft" onclick="takeOverConversation('${convo.id}')">🙋 Take Over</button>`}
+        </div>
+      </div>
+      ${modeIsHuman ? '<div class="conv-mode-banner human">Human mode active — the AI is paused for this conversation.</div>' : ''}
+      ${convo.human_handoff ? '<div class="conv-mode-banner handoff">⚠ This conversation was flagged for human follow-up.</div>' : ''}
+      <div class="conv-messages" id="convMessages">
+        ${messages.length ? messages.map(m => `
+          <div class="conv-msg ${m.direction}">
+            ${m.direction==='outbound' ? `<span class="conv-msg-tag">${m.sent_by==='human'?'You':'AI'}</span>` : ''}
+            ${escapeHtml(m.body)}
+          </div>
+        `).join('') : '<div class="conv-empty">No message history available yet.</div>'}
+      </div>
+      <div class="conv-reply-row">
+        <input type="text" id="convReplyInput" placeholder="Type a manual reply…" maxlength="1000" ${SUPABASE_MODE?'':'disabled'}>
+        <button class="btn btn-primary" onclick="sendConversationReply('${convo.id}')" ${SUPABASE_MODE?'':'disabled'}>Send</button>
+      </div>
+      ${SUPABASE_MODE ? '' : '<div class="conv-empty" style="padding:8px 18px 14px;">Manual replies require Supabase to be configured.</div>'}
+    `;
+    const msgBox = document.getElementById('convMessages');
+    if(msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+
+    const input = document.getElementById('convReplyInput');
+    if(input) input.addEventListener('keydown', e => { if(e.key==='Enter') sendConversationReply(convo.id); });
+  }
+
+  async function takeOverConversation(leadId){
+    try{
+      await DataAPI.setConversationMode(leadId, 'human');
+      const convo = conversations.find(c=>c.id===leadId);
+      if(convo) convo.mode = 'human';
+      renderConversationsList();
+      const messages = await DataAPI.getMessages(leadId);
+      renderConversationDetail(convo, messages);
+    }catch(err){
+      console.error('Failed to take over conversation', err);
+      alert('Could not take over this conversation. Please try again.');
+    }
+  }
+
+  async function returnToAI(leadId){
+    try{
+      await DataAPI.setConversationMode(leadId, 'ai');
+      const convo = conversations.find(c=>c.id===leadId);
+      if(convo) convo.mode = 'ai';
+      renderConversationsList();
+      const messages = await DataAPI.getMessages(leadId);
+      renderConversationDetail(convo, messages);
+    }catch(err){
+      console.error('Failed to return conversation to AI', err);
+      alert('Could not return this conversation to AI. Please try again.');
+    }
+  }
+
+  async function sendConversationReply(leadId){
+    const input = document.getElementById('convReplyInput');
+    const text = input?.value.trim();
+    if(!text) return;
+    input.value = '';
+    input.disabled = true;
+
+    try{
+      await DataAPI.sendManualReply(leadId, text);
+      const convo = conversations.find(c=>c.id===leadId);
+      if(convo){ convo.mode = 'human'; convo.last_message_preview = text; convo.last_message_at = new Date().toISOString(); }
+      renderConversationsList();
+      const messages = await DataAPI.getMessages(leadId);
+      renderConversationDetail(convo, messages);
+    }catch(err){
+      console.error('Failed to send manual reply', err);
+      alert(`Could not send that message: ${err.message}`);
+    }finally{
+      if(input) input.disabled = false;
+    }
   }
 
   function renderClientStatus(client, sub){
