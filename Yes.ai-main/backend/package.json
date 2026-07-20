@@ -1,0 +1,23 @@
+{
+  "name": "yes-ai-backend",
+  "version": "1.0.0",
+  "description": "YES.AI multi-tenant WhatsApp bot engine + Stripe billing backend",
+  "main": "server.js",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "@supabase/supabase-js": "^2.45.0",
+    "openai": "^4.55.0",
+    "stripe": "^16.8.0",
+    "googleapis": "^140.0.1",
+    "dotenv": "^16.4.5",
+    "body-parser": "^1.20.2"
+  }
+}

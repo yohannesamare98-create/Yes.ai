@@ -183,9 +183,8 @@
         <h2>Billing & Subscriptions</h2>
         <button class="btn btn-ghost" onclick="exportCSV('billing')">Export Payment Report</button>
       </div>
-      <div class="stat-grid" id="billingSummaryStats" style="margin-bottom:20px;"></div>
       <table>
-        <thead><tr><th>Client</th><th>Plan</th><th>Status</th><th>Usage</th><th>Trial Ends</th><th>Next Billing</th><th>Setup Fee</th><th></th></tr></thead>
+        <thead><tr><th>Client</th><th>Plan</th><th>Status</th><th>Trial Ends</th><th>Next Billing</th><th>Setup Fee</th><th></th></tr></thead>
         <tbody id="billingTableBody"></tbody>
       </table>
     </div>
@@ -465,15 +464,6 @@ What time do you prefer?</textarea></div>
   // =====================================================================
   let cachedClients = [], cachedLeads = [], cachedAppointments = [];
 
-  // Escapes untrusted text (customer names, WhatsApp messages, etc.) before
-  // it is inserted via innerHTML, so a message like "<img onerror=...>"
-  // sent by a customer on WhatsApp can never execute in the dashboard.
-  function escapeHtml(value){
-    return String(value ?? '').replace(/[&<>"']/g, ch => ({
-      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-    }[ch]));
-  }
-
   function clientName(id){ return cachedClients.find(c=>c.id===id)?.business_name || id; }
   function subFor(client){ return Array.isArray(client.subscriptions) ? client.subscriptions[0] : client.subscriptions; }
 
@@ -481,7 +471,6 @@ What time do you prefer?</textarea></div>
     cachedClients = await DataAPI.getClients();
     cachedLeads = await DataAPI.getLeads();
     cachedAppointments = await DataAPI.getAppointments();
-    await loadBillingIntel();
 
     renderClientStats();
     renderClientsTable();
@@ -489,56 +478,22 @@ What time do you prefer?</textarea></div>
     renderApptTable();
     renderHotLeadsTable();
     renderBillingTable();
-    renderBillingSummaryStats();
   }
 
-  // Milestone 7A: MRR/ARR/usage now come from backend/config/planConfig.js
-  // via /api/admin/billing/summary and /api/admin/billing/clients — this
-  // removes the old hardcoded, stale PLAN_PRICE_AED map (which still had
-  // pre-Milestone-7 prices and would have silently drifted from reality).
-  let billingSummary = { mrrAed:0, arrAed:0, totalClients:0, activeClients:0, trialClients:0, pastDueClients:0, cancelledClients:0, failedClients:0 };
-  let billingUsageByClient = {};
-
-  async function adminApiCall(path){
-    if(!SUPABASE_MODE) return null;
-    const { data:{ session } } = await sb.auth.getSession();
-    const response = await fetch(`/api/${path}`, { headers:{ 'Authorization':`Bearer ${session?.access_token}` } });
-    if(!response.ok) throw new Error(`Request failed (${response.status})`);
-    return response.json();
-  }
-
-  async function loadBillingIntel(){
-    try{
-      billingSummary = await adminApiCall('admin/billing/summary') || billingSummary;
-      const rows = await adminApiCall('admin/billing/clients') || [];
-      billingUsageByClient = Object.fromEntries(rows.filter(r=>r.usage).map(r=>[r.clientId, r.usage]));
-    }catch(err){
-      console.warn('[billing] Could not load admin billing intelligence:', err.message);
-    }
-  }
+  const PLAN_PRICE_AED = { lite:99, growth:199, pro:399 };
 
   function renderClientStats(){
     const total = cachedClients.length;
     const trial = cachedClients.filter(c=>subFor(c)?.status==='trialing').length;
     const pastDue = cachedClients.filter(c=>subFor(c)?.status==='past_due').length;
-    const mrr = billingSummary.mrrAed || 0;
+    const mrr = cachedClients
+      .filter(c=>subFor(c)?.status==='active')
+      .reduce((sum,c)=> sum + (PLAN_PRICE_AED[subFor(c)?.plan] || 0), 0);
     document.getElementById('clientStats').innerHTML = `
       <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Total Clients</div></div>
       <div class="stat-card"><div class="stat-num">AED ${mrr.toLocaleString()}</div><div class="stat-label">Monthly Revenue (MRR)</div></div>
       <div class="stat-card"><div class="stat-num">${trial}</div><div class="stat-label">On Free Trial</div></div>
       <div class="stat-card"><div class="stat-num">${pastDue}</div><div class="stat-label">Past Due</div></div>
-    `;
-  }
-
-  function renderBillingSummaryStats(){
-    const s = billingSummary;
-    document.getElementById('billingSummaryStats').innerHTML = `
-      <div class="stat-card"><div class="stat-num">AED ${(s.mrrAed||0).toLocaleString()}</div><div class="stat-label">MRR</div></div>
-      <div class="stat-card"><div class="stat-num">AED ${(s.arrAed||0).toLocaleString()}</div><div class="stat-label">ARR</div></div>
-      <div class="stat-card"><div class="stat-num">${s.activeClients||0}</div><div class="stat-label">Active</div></div>
-      <div class="stat-card"><div class="stat-num">${s.trialClients||0}</div><div class="stat-label">Trial</div></div>
-      <div class="stat-card"><div class="stat-num">${s.pastDueClients||0}</div><div class="stat-label">Past Due</div></div>
-      <div class="stat-card"><div class="stat-num">${s.cancelledClients||0}</div><div class="stat-label">Cancelled</div></div>
     `;
   }
 
@@ -579,11 +534,11 @@ What time do you prefer?</textarea></div>
     document.getElementById('leadsTableBody').innerHTML = cachedLeads.map(l=>`
       <tr>
         <td>${new Date(l.created_at).toLocaleDateString()}</td>
-        <td>${escapeHtml(clientName(l.client_id))}</td>
-        <td>${escapeHtml(l.customer_name)||'-'}</td>
-        <td>${escapeHtml(l.customer_whatsapp)}</td>
-        <td>${escapeHtml(l.message_summary)}</td>
-        <td><span class="pill ${l.status==='booked'?'active':'off'}">${escapeHtml(l.status)}</span></td>
+        <td>${clientName(l.client_id)}</td>
+        <td>${l.customer_name||'-'}</td>
+        <td>${l.customer_whatsapp}</td>
+        <td>${l.message_summary}</td>
+        <td><span class="pill ${l.status==='booked'?'active':'off'}">${l.status}</span></td>
         <td>${l.is_hot_lead ? '<span class="pill hot">HOT</span>' : ''}</td>
       </tr>`).join('') || `<tr><td colspan="7" class="empty">No leads yet.</td></tr>`;
   }
@@ -591,10 +546,10 @@ What time do you prefer?</textarea></div>
   function renderApptTable(){
     document.getElementById('apptTableBody').innerHTML = cachedAppointments.map(a=>`
       <tr>
-        <td>${escapeHtml(clientName(a.client_id))}</td>
-        <td>${escapeHtml(a.service)}</td>
+        <td>${clientName(a.client_id)}</td>
+        <td>${a.service}</td>
         <td>${new Date(a.appointment_time).toLocaleString()}</td>
-        <td><span class="pill active">${escapeHtml(a.status)}</span></td>
+        <td><span class="pill active">${a.status}</span></td>
       </tr>`).join('') || `<tr><td colspan="4" class="empty">No appointments yet.</td></tr>`;
   }
 
@@ -603,25 +558,20 @@ What time do you prefer?</textarea></div>
     document.getElementById('hotLeadsTableBody').innerHTML = hot.map(l=>`
       <tr>
         <td>${new Date(l.created_at).toLocaleDateString()}</td>
-        <td>${escapeHtml(clientName(l.client_id))}</td>
-        <td>${escapeHtml(l.customer_name)||'-'}</td>
-        <td>${escapeHtml(l.customer_whatsapp)}</td>
-        <td>${escapeHtml(l.message_summary)}</td>
+        <td>${clientName(l.client_id)}</td>
+        <td>${l.customer_name||'-'}</td>
+        <td>${l.customer_whatsapp}</td>
+        <td>${l.message_summary}</td>
       </tr>`).join('') || `<tr><td colspan="5" class="empty">No hot leads right now.</td></tr>`;
   }
 
   function renderBillingTable(){
     document.getElementById('billingTableBody').innerHTML = cachedClients.map(c=>{
       const sub = subFor(c) || {};
-      const usage = billingUsageByClient[c.id];
-      const usageCell = usage
-        ? `${usage.used}/${usage.limit} <span style="color:${usage.percentUsed>=100?'var(--red)':usage.percentUsed>=80?'#b45309':'var(--ink-muted)'};font-weight:600;">(${usage.percentUsed}%)</span>`
-        : '-';
       return `<tr>
         <td>${c.business_name}</td>
         <td>${sub.plan||c.plan}</td>
         <td><span class="pill ${sub.status}">${sub.status||'-'}</span></td>
-        <td>${usageCell}</td>
         <td>${sub.trial_end_date ? new Date(sub.trial_end_date).toLocaleDateString() : '-'}</td>
         <td>${sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString() : '-'}</td>
         <td>${sub.setup_fee_paid ? '✅ Paid' : '⏳ Pending'}</td>
@@ -774,11 +724,7 @@ What time do you prefer?</textarea></div>
         rows.push([c.business_name, s.plan, s.status, s.trial_end_date||'', s.next_billing_date||'', s.setup_fee_paid?'Yes':'No']);
       });
     }
-    // Prefix a leading apostrophe on any cell starting with =, +, -, or @ so
-    // spreadsheet apps (Excel/Sheets) treat it as text, not a formula —
-    // customer_name/message_summary come from WhatsApp and are untrusted.
-    const csvSafe = v => { const s = (v??'').toString(); return /^[=+\-@]/.test(s) ? `'${s}` : s; };
-    const csv = rows.map(r=>r.map(v=>`"${csvSafe(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const csv = rows.map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], {type:'text/csv'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

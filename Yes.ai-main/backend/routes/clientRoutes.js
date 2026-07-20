@@ -23,8 +23,7 @@ const CLIENT_UPDATE_FIELDS = new Set([
 
 const BOT_CONFIG_UPDATE_FIELDS = new Set([
   'ai_instructions', 'business_description', 'tone_of_voice', 'services',
-  'offers', 'faqs', 'qualification_questions', 'hot_lead_rules',
-  'policies', 'fallback_message', 'human_handoff_keywords'
+  'offers', 'faqs', 'qualification_questions', 'hot_lead_rules'
 ]);
 
 function pickAllowed(body, allowed) {

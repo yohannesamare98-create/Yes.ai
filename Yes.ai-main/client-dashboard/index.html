@@ -246,7 +246,6 @@
     <div class="tab" data-tab="integrations">Integrations</div>
     <div class="tab" data-tab="billing">Billing</div>
     <div class="tab wizard-trigger" onclick="openWizard()" style="margin-left:auto;color:var(--blue);">🧭 Setup Wizard</div>
-    <a class="tab" href="test-ai.html" style="color:var(--purple);text-decoration:none;">🧪 Test AI</a>
   </div>
 
   <main>
@@ -357,33 +356,13 @@
         <div class="plan-row"><span>Status</span><span id="b_status"></span></div>
         <div class="plan-row"><span>Trial days remaining</span><strong id="b_trial"></strong></div>
         <div class="plan-row"><span>Next billing date</span><strong id="b_nextbill"></strong></div>
-        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;margin-top:16px;">
           <button class="btn btn-ghost">Update Payment Method</button>
-          <button class="btn btn-ghost" onclick="changePlan('upgrade')">Upgrade Plan</button>
-          <button class="btn btn-ghost" onclick="changePlan('downgrade')">Downgrade Plan</button>
-          <button class="btn btn-ghost hidden" id="resumeBtn" onclick="resumeSubscription()">Resume Subscription</button>
+          <button class="btn btn-ghost">Upgrade Plan</button>
+          <button class="btn btn-ghost">Downgrade Plan</button>
           <button class="btn btn-danger" onclick="cancelSub()">Cancel Subscription</button>
         </div>
       </div>
-
-      <div class="card">
-        <h3>Conversation Usage</h3>
-        <div id="usageSummary" style="font-size:13px;color:var(--ink-muted);margin-bottom:10px;"></div>
-        <div style="background:var(--border);border-radius:8px;height:10px;overflow:hidden;">
-          <div id="usageBar" style="height:100%;width:0%;background:var(--blue);transition:width .3s ease, background .3s ease;"></div>
-        </div>
-        <div id="usageWarning" class="hidden" style="margin-top:10px;font-size:12.5px;font-weight:600;"></div>
-        <div id="overageEstimate" style="margin-top:10px;font-size:13px;color:var(--ink-muted);"></div>
-      </div>
-
-      <div class="card">
-        <h3>Payment History</h3>
-        <table>
-          <thead><tr><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
-          <tbody id="paymentsBody"><tr><td colspan="3" style="text-align:center;color:var(--ink-muted);">No payments yet.</td></tr></tbody>
-        </table>
-      </div>
-
       <div class="card">
         <h3>Invoices</h3>
         <table>
@@ -594,15 +573,6 @@
     }
   };
 
-  // Escapes untrusted text (customer names, WhatsApp messages, etc.) before
-  // it is inserted via innerHTML, so a message like "<img onerror=...>"
-  // sent by a customer on WhatsApp can never execute in the dashboard.
-  function escapeHtml(value){
-    return String(value ?? '').replace(/[&<>"']/g, ch => ({
-      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-    }[ch]));
-  }
-
   function normalizeArray(value){
     if(Array.isArray(value)) return value;
     if(value == null || value === '') return [];
@@ -779,12 +749,12 @@
     }).join('');
 
     document.getElementById('leadsBody').innerHTML = leads.map(l=>`
-      <tr><td>${new Date(l.created_at).toLocaleDateString()}</td><td>${escapeHtml(l.customer_name)||'-'}</td><td>${escapeHtml(l.customer_whatsapp)}</td><td>${escapeHtml(l.message_summary)}</td>
-      <td><span class="pill ${escapeHtml(l.status)}">${escapeHtml(l.status)}</span></td><td>${l.is_hot_lead?'<span class="pill hot">HOT</span>':''}</td></tr>
+      <tr><td>${new Date(l.created_at).toLocaleDateString()}</td><td>${l.customer_name||'-'}</td><td>${l.customer_whatsapp}</td><td>${l.message_summary}</td>
+      <td><span class="pill ${l.status}">${l.status}</span></td><td>${l.is_hot_lead?'<span class="pill hot">HOT</span>':''}</td></tr>
     `).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--ink-muted);">No leads yet.</td></tr>`;
 
     document.getElementById('apptBody').innerHTML = appts.map(a=>`
-      <tr><td>${escapeHtml(a.service)}</td><td>${new Date(a.appointment_time).toLocaleString()}</td><td><span class="pill active">${escapeHtml(a.status)}</span></td></tr>
+      <tr><td>${a.service}</td><td>${new Date(a.appointment_time).toLocaleString()}</td><td><span class="pill active">${a.status}</span></td></tr>
     `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--ink-muted);">No appointments yet.</td></tr>`;
 
     document.getElementById('s_services').value = normalizeArray(config.services).map(s=>`${s.name}, ${s.price}`).join('\n');
@@ -804,82 +774,9 @@
     const trialDays = sub.trial_end_date ? Math.max(0, Math.ceil((new Date(sub.trial_end_date) - new Date())/86400000)) : null;
     document.getElementById('b_trial').textContent = trialDays !== null ? `${trialDays} days` : 'Trial ended / not applicable';
     document.getElementById('b_nextbill').textContent = sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString() : '-';
-    document.getElementById('resumeBtn').classList.toggle('hidden', !(sub.cancel_at_period_end || sub.status==='cancelled'));
-    renderBillingExtras(); // fetches usage/invoices/payments separately — see function below
 
     // stash latest fetch for export/save handlers
     window.__latestLeads = leads;
-  }
-
-  // =====================================================================
-  // BILLING — Milestone 7A. Calls the new backend endpoints (client_id is
-  // resolved server-side from the auth token, never trusted from the
-  // browser) rather than reading these tables directly, because clients
-  // only have SELECT rls on `subscriptions` — writes must go through
-  // validated server logic. Fails quietly (logs, shows a friendly note)
-  // if the backend isn't reachable, so it can never break the rest of
-  // the dashboard.
-  // =====================================================================
-  async function billingApiCall(path, options={}){
-    if(!SUPABASE_MODE) throw new Error('Billing actions require a live backend connection.');
-    const { data:{ session } } = await sb.auth.getSession();
-    const response = await fetch(`/api/billing/${path}`, {
-      ...options,
-      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${session?.access_token}`, ...(options.headers||{}) }
-    });
-    const body = await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
-    return body;
-  }
-
-  async function renderBillingExtras(){
-    const usageBox = document.getElementById('usageSummary');
-    const bar = document.getElementById('usageBar');
-    const warningBox = document.getElementById('usageWarning');
-    const overageBox = document.getElementById('overageEstimate');
-    try{
-      const status = await billingApiCall('status');
-      const u = status.usage;
-      if(u){
-        usageBox.textContent = `${u.used.toLocaleString()} of ${u.limit.toLocaleString()} conversations used this month`;
-        bar.style.width = `${u.percentUsed}%`;
-        bar.style.background = u.percentUsed>=100 ? 'var(--red)' : u.percentUsed>=90 ? '#f59e0b' : u.percentUsed>=80 ? '#facc15' : 'var(--blue)';
-        if(u.percentUsed>=100){ warningBox.textContent='Limit reached — extra conversations are billed as overage.'; warningBox.style.color='var(--red)'; warningBox.classList.remove('hidden'); }
-        else if(u.percentUsed>=90){ warningBox.textContent="You're at 90% of your monthly conversations."; warningBox.style.color='#b45309'; warningBox.classList.remove('hidden'); }
-        else if(u.percentUsed>=80){ warningBox.textContent="You're at 80% of your monthly conversations."; warningBox.style.color='#92400e'; warningBox.classList.remove('hidden'); }
-        else warningBox.classList.add('hidden');
-        overageBox.textContent = u.overageCount>0 ? `${u.overageCount} overage conversation(s) so far — estimated AED ${u.overageCostAed.toFixed(2)} extra this cycle.` : 'No overage this cycle.';
-      }
-
-      document.getElementById('paymentsBody').innerHTML = (status.payments||[]).map(p=>`
-        <tr><td>${new Date(p.created_at).toLocaleDateString()}</td><td>AED ${Number(p.amount_aed).toFixed(2)}</td><td><span class="pill ${p.status==='succeeded'?'active':p.status==='failed'?'failed':''}">${p.status}</span></td></tr>
-      `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--ink-muted);">No payments yet.</td></tr>`;
-
-      document.getElementById('invoicesBody').innerHTML = (status.invoices||[]).map(inv=>`
-        <tr><td>${new Date(inv.issued_at).toLocaleDateString()}</td><td>AED ${Number(inv.amount_aed).toFixed(2)}</td><td><span class="pill ${inv.status==='paid'?'active':''}">${inv.status}</span></td><td>${inv.invoice_pdf_url?`<a href="${inv.invoice_pdf_url}" target="_blank" rel="noopener">Download</a>`:'-'}</td></tr>
-      `).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--ink-muted);">No invoices yet — first invoice appears after your trial ends.</td></tr>`;
-    }catch(err){
-      usageBox.textContent = 'Usage data unavailable right now.';
-      console.warn('[billing] Could not load usage/invoices/payments:', err.message);
-    }
-  }
-
-  async function changePlan(direction){
-    const target = direction==='upgrade' ? prompt('Upgrade to which plan? (growth or pro)') : prompt('Downgrade to which plan? (starter or growth)');
-    if(!target) return;
-    try{
-      await billingApiCall(direction, { method:'POST', body: JSON.stringify({ plan: target.trim().toLowerCase() }) });
-      alert(`Plan updated to ${target.trim().toUpperCase()}.`);
-      await renderAll();
-    }catch(err){ alert(`Could not change plan: ${err.message}`); }
-  }
-
-  async function resumeSubscription(){
-    try{
-      await billingApiCall('resume', { method:'POST' });
-      alert('Subscription resumed.');
-      await renderAll();
-    }catch(err){ alert(`Could not resume subscription: ${err.message}`); }
   }
 
   function renderClientStatus(client, sub){
@@ -966,11 +863,7 @@
     const leads = window.__latestLeads || [];
     const rows = [['Date','Name','WhatsApp','Summary','Status','Hot']];
     leads.forEach(l=>rows.push([new Date(l.created_at).toLocaleDateString(), l.customer_name, l.customer_whatsapp, l.message_summary, l.status, l.is_hot_lead?'Yes':'No']));
-    // Prefix a leading apostrophe on any cell starting with =, +, -, or @ so
-    // spreadsheet apps (Excel/Sheets) treat it as text, not a formula —
-    // customer_name/message_summary come from WhatsApp and are untrusted.
-    const csvSafe = v => { const s = (v??'').toString(); return /^[=+\-@]/.test(s) ? `'${s}` : s; };
-    const csv = rows.map(r=>r.map(v=>`"${csvSafe(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const csv = rows.map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], {type:'text/csv'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'my_leads_export.csv'; a.click();
