@@ -101,8 +101,9 @@
 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <h1>Test AI</h1>
+    <h1 id="loginTitle">Test AI</h1>
     <p id="loginMessage">Please log in to your YES.AI dashboard first, then come back to this page to test your bot.</p>
+    <button class="send-btn hidden" id="retryBtn" style="margin-bottom:10px;width:100%;">Retry</button>
     <a href="index.html" class="back-link">&larr; Go to dashboard login</a>
   </div>
 </div>
@@ -175,33 +176,66 @@
     }[ch]));
   }
 
+  // Wraps any promise so it can never hang the UI forever — the actual
+  // root cause of "infinite loading": boot() previously awaited Supabase
+  // calls with no maximum wait, so a slow/unreachable network call left
+  // the page stuck on the loading spinner with no way out.
+  function withTimeout(promise, ms, timeoutMessage){
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(timeoutMessage)), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  }
+
+  function showLoginScreen(message, { showRetry=false } = {}){
+    setAppState('login');
+    document.getElementById('loginTitle').textContent = 'Test AI';
+    document.getElementById('loginMessage').textContent = message;
+    document.getElementById('retryBtn').classList.toggle('hidden', !showRetry);
+  }
+
   async function boot(){
     setAppState('loading');
     if(!SUPABASE_MODE){
-      setAppState('login');
-      document.getElementById('loginMessage').textContent =
-        'Test AI requires Supabase to be configured on this dashboard (config.js). Ask your admin to finish setup, then reload this page.';
+      showLoginScreen('Test AI requires Supabase to be configured on this dashboard (config.js). Ask your admin to finish setup, then reload this page.');
       return;
     }
     try{
-      const { data:{session}, error } = await sb.auth.getSession();
-      if(error) throw error;
-      if(!session){ setAppState('login'); return; }
+      const { data:{session}, error } = await withTimeout(
+        sb.auth.getSession(), 12000, 'Session check timed out. Your connection may be slow, or the login session could not be verified.'
+      );
+      if(error) throw new Error('Session expired. Please log in again.');
+      if(!session){ showLoginScreen('Please log in to your YES.AI dashboard first, then come back to this page to test your bot.'); return; }
 
-      let { data: clientUserRow } = await sb.from('client_users').select('*').eq('auth_uid', session.user.id).maybeSingle();
+      let clientUserRow;
+      try{
+        const result = await withTimeout(
+          sb.from('client_users').select('*').eq('auth_uid', session.user.id).maybeSingle(),
+          12000, 'Backend unavailable — could not load your client account. Please check your connection and try again.'
+        );
+        if(result.error) throw new Error('Backend unavailable — could not load your client account.');
+        clientUserRow = result.data;
+      }catch(lookupErr){
+        showLoginScreen(lookupErr.message, { showRetry:true });
+        return;
+      }
+
       if(!clientUserRow){
-        setAppState('login');
-        document.getElementById('loginMessage').textContent = 'Your account is not connected to a client workspace yet.';
+        showLoginScreen('Client account not found. Your account is not connected to a client workspace yet.');
         return;
       }
       currentClientId = clientUserRow.client_id;
       setAppState('app');
     }catch(err){
       console.error('Test AI boot failed', err);
-      setAppState('login');
-      document.getElementById('loginMessage').textContent = err?.message || 'We could not open Test AI. Please try again.';
+      // Session-check timeout / transient failure — recoverable, so offer Retry
+      // instead of just pointing back at the login page.
+      showLoginScreen(err?.message || 'We could not open Test AI. Please try again.', { showRetry:true });
     }
   }
+
+  document.getElementById('retryBtn').addEventListener('click', boot);
 
   function appendMessage(role, text){
     const body = document.getElementById('chatBody');
@@ -258,21 +292,35 @@
     document.getElementById('sendBtn').disabled = true;
     appendMessage('user', text);
 
+    // 30s covers a real AI generation call with margin; anything longer is
+    // treated as a failure rather than left to hang the Send button forever.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
     try{
-      const { data:{session} } = await sb.auth.getSession();
+      const { data:{session}, error: sessionError } = await sb.auth.getSession();
+      if(sessionError || !session){
+        appendMessage('error', 'Session expired. Please log in again.');
+        return;
+      }
+
       const res = await fetch(`/api/clients/${currentClientId}/test-ai`, {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({ message: text, conversation_history: history })
       });
 
       if(!res.ok){
         const err = await res.json().catch(()=>({}));
-        appendMessage('error', `Request failed: ${err.error || res.status}`);
-        return;
+        if(res.status === 401){ appendMessage('error', 'Unauthorized — your session may have expired. Please log in again.'); }
+        else if(res.status === 403){ appendMessage('error', 'Unauthorized — this account cannot access this client workspace.'); }
+        else if(res.status === 404){ appendMessage('error', 'Backend unavailable — the Test AI endpoint could not be reached.'); }
+        else { appendMessage('error', `AI request failed: ${err.error || res.status}`); }
+        return; // conversation (history) is left untouched so the user can retry
       }
 
       const result = await res.json();
@@ -285,8 +333,16 @@
       }
     }catch(err){
       console.error('Test AI send failed', err);
-      appendMessage('error', 'Something went wrong sending that message. Please try again.');
+      if(err.name === 'AbortError'){
+        appendMessage('error', 'AI request failed — the request timed out. Please try again.');
+      } else {
+        appendMessage('error', 'Backend unavailable — something went wrong sending that message. Please try again.');
+      }
+      // Conversation history is intentionally left as-is on any recoverable
+      // error above, so a retry continues the same conversation instead of
+      // losing context.
     }finally{
+      clearTimeout(timeoutId);
       document.getElementById('sendBtn').disabled = false;
       input.focus();
     }
@@ -303,6 +359,15 @@
   });
 
   boot();
+
+  // Hard failsafe: even if something inside boot() misbehaves in a way the
+  // withTimeout() wrapper doesn't catch, this guarantees the page can never
+  // be stuck on the loading spinner indefinitely.
+  setTimeout(() => {
+    if(document.body.dataset.appState === 'loading'){
+      showLoginScreen('This is taking longer than expected. Please check your connection and try again.', { showRetry:true });
+    }
+  }, 15000);
 </script>
 </body>
 </html>
