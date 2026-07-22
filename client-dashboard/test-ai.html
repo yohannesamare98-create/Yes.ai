@@ -37,6 +37,7 @@
   body[data-app-state="loading"] #loginScreen,body[data-app-state="loading"] #appWrap{display:none!important;}
   body[data-app-state="login"] #appWrap{display:none!important;}
   body[data-app-state="app"] #loginScreen{display:none!important;}
+  body:not([data-app-state="loading"]) #appLoading{display:none!important;}
 
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.7);backdrop-filter:blur(14px);position:sticky;top:0;z-index:20;}
   .brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;}
