@@ -37,6 +37,7 @@
   body[data-app-state="loading"] #loginScreen,body[data-app-state="loading"] #appWrap{display:none!important;}
   body[data-app-state="login"] #appWrap{display:none!important;}
   body[data-app-state="app"] #loginScreen{display:none!important;}
+  body:not([data-app-state="loading"]) #appLoading{display:none!important;}
 
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.7);backdrop-filter:blur(14px);position:sticky;top:0;z-index:20;}
   .brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;}
@@ -162,6 +163,13 @@
 
 <script>
   const cfg = window.YESAI_CONFIG || {};
+  // The frontend (client-dashboard) is hosted on Vercel; the backend is a
+  // separate Railway deployment. A relative '/api/...' fetch resolves
+  // against the Vercel origin (which has no matching route), not Railway
+  // — that was the exact cause of "Backend unavailable — the Test AI
+  // endpoint could not be reached." This constant makes the Test AI
+  // request target Railway explicitly.
+  const RAILWAY_API_BASE_URL = 'https://yesai-production.up.railway.app';
   const SUPABASE_MODE = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
   const sb = SUPABASE_MODE ? supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
 
@@ -304,7 +312,7 @@
         return;
       }
 
-      const res = await fetch(`/api/clients/${currentClientId}/test-ai`, {
+      const res = await fetch(`${RAILWAY_API_BASE_URL}/api/clients/${currentClientId}/test-ai`, {
         method: 'POST',
         signal: controller.signal,
         headers: {
